@@ -19,7 +19,7 @@ const pool = new Pool({
     await client.query("BEGIN");
 
     // Hapus tabel lama jika ada
-    await client.query("DROP TABLE IF EXISTS reading_exercises CASCADE");
+    // await client.query("DROP TABLE IF EXISTS reading_exercises CASCADE");
 
     // Buat tabel baru untuk Wacana (Passages)
     await client.query(`
