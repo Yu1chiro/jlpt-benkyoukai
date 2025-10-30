@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kelola Latihan Membaca (Dokkai)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js"></script>
+  <style>
+    .ql-toolbar.ql-snow {
+      border: 1px solid #d4d4d4;
+      border-top-left-radius: 0.5rem;
+      border-top-right-radius: 0.5rem;
+      background-color: #f5f5f4;
+    }
+    .ql-container.ql-snow {
+      border: 1px solid #d4d4d4;
+      border-bottom-left-radius: 0.5rem;
+      border-bottom-right-radius: 0.5rem;
+      background-color: white;
+      min-height: 200px;
+    }
+    .question-entry {
+      position: relative;
+      border: 1px solid #e7e5e4;
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      background-color: #fafaf9;
+    }
+  </style>
+</head>
+<body class="bg-stone-50 antialiased">
+
+  <nav class="bg-white border-b border-stone-200 backdrop-blur-sm bg-white/90 sticky top-0 z-10">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <div class="flex-1 min-w-0">
+        <h1 class="text-lg font-semibold text-stone-900 tracking-tight">Kelola Dokkai</h1>
+        <p id="chapter-title-display" class="text-sm text-stone-500 truncate">Memuat nama bab...</p>
+      </div>
+      <a href="/dashboard" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 whitespace-nowrap">
+        &larr; Kembali ke Dashboard
+      </a>
+    </div>
+  </nav>
+
+  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-5xl">
+    
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8 mb-8">
+      <h2 id="form-title" class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Tambah Wacana Dokkai Baru</h2>
+      
+      <form id="dokkai-form" class="space-y-6">
+        <input type="hidden" id="editingId" value="">
+        
+        <div>
+          <label for="passage_content" class="block text-sm font-medium text-stone-700 mb-2">Wacana (Passage)</label>
+          <div id="editor-container"></div>
+        </div>
+
+        <hr class="border-stone-200">
+
+        <div>
+          <h3 class="text-lg font-semibold text-stone-800 mb-4">Pertanyaan</h3>
+          <div id="questions-container" class="space-y-6"></div>
+        </div>
+
+        <div>
+          <button type="button" id="add-question-btn" class="inline-flex items-center justify-center w-full px-5 py-2.5 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 border border-stone-300">
+            + Tambah Pertanyaan
+          </button>
+        </div>
+
+        <hr class="border-stone-200 mt-8">
+
+        <div class="flex items-center gap-3 pt-4">
+          <button type="submit" id="submit-button" class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Tambah Wacana
+          </button>
+          <button type="button" id="cancel-edit-button" class="hidden inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Batal Edit
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8">
+      <h2 class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Daftar Wacana Dokkai</h2>
+      <div id="list-container" class="space-y-4">
+        <p class="text-sm text-stone-500">Memuat daftar wacana...</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    'use strict';
+
+    // ============================================
+    // VARIABEL GLOBAL
+    // ============================================
+    const urlParams = new URLSearchParams(window.location.search);
+    const babId = urlParams.get('babId');
+    const babTitle = urlParams.get('title');
+
+    // Elemen DOM
+    const form = document.getElementById('dokkai-form');
+    const formTitle = document.getElementById('form-title');
+    const submitButton = document.getElementById('submit-button');
+    const cancelEditButton = document.getElementById('cancel-edit-button');
+    const editingIdInput = document.getElementById('editingId');
+    const listContainer = document.getElementById('list-container');
+    const questionsContainer = document.getElementById('questions-container');
+    const addQuestionButton = document.getElementById('add-question-btn');
+
+    // Inisialisasi Quill Editor
+    const quill = new Quill('#editor-container', {
+      theme: 'snow',
+      modules: {
+        toolbar: [
+          [{ 'header': [2, 3, false] }],
+          ['bold', 'italic', 'underline'],
+          [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+          ['clean']
+        ]
+      },
+      placeholder: 'Masukkan wacana (passage) di sini...'
+    });
+
+    // ============================================
+    // FUNGSI HELPER
+    // ============================================
+
+    /**
+     * Menampilkan notifikasi toast
+     */
+    const showToast = (message, icon = 'success') => {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: icon,
+        title: message,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    };
+
+    /**
+     * Menambahkan form pertanyaan baru
+     */
+    function addQuestionEntry(question = {}) {
+      const qIndex = questionsContainer.children.length + 1;
+      const entryDiv = document.createElement('div');
+      entryDiv.className = 'question-entry space-y-4';
+
+      entryDiv.innerHTML = `
+        <div class="flex justify-between items-center">
+          <label class="block text-sm font-semibold text-stone-700">Pertanyaan ${qIndex}</label>
+          <button type="button" class="remove-question-btn text-sm font-medium text-red-600 hover:text-red-800" title="Hapus pertanyaan ini">Hapus</button>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-medium text-stone-600 mb-1">Teks Pertanyaan</label>
+          <textarea class="q-text w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg" rows="2" placeholder="Masukkan teks pertanyaan" required>${question.question_text || ''}</textarea>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-medium text-stone-600 mb-1">Pilihan A</label>
+            <input type="text" class="q-opt-a w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg" value="${question.option_a || ''}" required>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-stone-600 mb-1">Pilihan B</label>
+            <input type="text" class="q-opt-b w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg" value="${question.option_b || ''}" required>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-stone-600 mb-1">Pilihan C</label>
+            <input type="text" class="q-opt-c w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg" value="${question.option_c || ''}" required>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-stone-600 mb-1">Pilihan D</label>
+            <input type="text" class="q-opt-d w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg" value="${question.option_d || ''}" required>
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-xs font-medium text-stone-600 mb-1">Jawaban Benar</label>
+          <select class="q-correct w-full md:w-1/2 px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg" required>
+            <option value="" disabled>Pilih jawaban</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+            <option value="D">D</option>
+          </select>
+        </div>
+      `;
+
+      questionsContainer.appendChild(entryDiv);
+      entryDiv.querySelector('.q-correct').value = question.correct_answer || '';
+    }
+
+    // ============================================
+    // FUNGSI CRUD
+    // ============================================
+
+    /**
+     * Mengambil daftar wacana dokkai dari API
+     */
+    async function fetchReadingExercises() {
+      if (!babId) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">Error: ID Bab tidak ditemukan.</p>';
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/admin/reading/${babId}`);
+        if (!res.ok) throw new Error('Gagal memuat data');
+        const passages = await res.json();
+        renderReadingExercises(passages);
+      } catch (err) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat wacana dokkai.</p>';
+        console.error(err);
+      }
+    }
+
+    /**
+     * Menampilkan daftar wacana dokkai
+     */
+    function renderReadingExercises(passages) {
+      listContainer.innerHTML = '';
+      
+      if (passages.length === 0) {
+        listContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada wacana dokkai untuk bab ini.</p>';
+        return;
+      }
+
+      passages.forEach(ex => {
+        const item = document.createElement('div');
+        item.className = 'border border-stone-200 rounded-lg p-4 hover:border-stone-300 transition-colors duration-200';
+
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = ex.passage_content;
+        const passagePreview = tempDiv.textContent.substring(0, 150) + '...';
+        const questionCount = (ex.questions && ex.questions.length > 0) ? ex.questions.length : 0;
+
+        item.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-medium text-stone-500">${questionCount} Pertanyaan</p>
+              <p class="text-sm text-stone-700 truncate" title="${tempDiv.textContent}">${passagePreview}</p>
+            </div>
+            <div class="flex-shrink-0 flex gap-2">
+              <button class="edit-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-md" data-id="${ex.id}">Edit</button>
+              <button class="delete-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md" data-id="${ex.id}">Hapus</button>
+            </div>
+          </div>
+        `;
+        
+        listContainer.appendChild(item);
+      });
+    }
+
+    /**
+     * Reset form ke mode tambah
+     */
+    function resetForm() {
+      form.reset();
+      quill.setContents([]);
+      questionsContainer.innerHTML = '';
+      editingIdInput.value = '';
+      formTitle.textContent = 'Tambah Wacana Dokkai Baru';
+      submitButton.textContent = 'Tambah Wacana';
+      cancelEditButton.classList.add('hidden');
+      addQuestionEntry();
+    }
+
+    /**
+     * Edit wacana dokkai
+     */
+    async function editExercise(id) {
+      try {
+        const res = await fetch(`/api/reading/passage/${id}`);
+        if (!res.ok) throw new Error('Gagal mengambil data wacana');
+        const ex = await res.json();
+
+        quill.root.innerHTML = ex.passage_content;
+        editingIdInput.value = ex.id;
+        questionsContainer.innerHTML = '';
+
+        if (ex.questions && ex.questions.length > 0) {
+          ex.questions.forEach(q => addQuestionEntry(q));
+        }
+
+        formTitle.textContent = 'Edit Wacana Dokkai';
+        submitButton.textContent = 'Simpan Perubahan';
+        cancelEditButton.classList.remove('hidden');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+
+    /**
+     * Hapus wacana dokkai
+     */
+    function deleteExercise(id) {
+      Swal.fire({
+        title: 'Anda yakin?',
+        text: "Wacana ini dan SEMUA pertanyaannya akan dihapus permanen!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await fetch(`/api/reading/passage/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Gagal menghapus');
+            fetchReadingExercises();
+            showToast('Wacana berhasil dihapus.');
+            resetForm();
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    }
+
+    // ============================================
+    // EVENT LISTENERS
+    // ============================================
+
+    /**
+     * Submit form (create/update)
+     */
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const passage_content = quill.root.innerHTML;
+      const questions = [];
+      const questionEntries = document.querySelectorAll('.question-entry');
+      let isFormValid = true;
+
+      questionEntries.forEach(entry => {
+        const question_text = entry.querySelector('.q-text').value;
+        const option_a = entry.querySelector('.q-opt-a').value;
+        const option_b = entry.querySelector('.q-opt-b').value;
+        const option_c = entry.querySelector('.q-opt-c').value;
+        const option_d = entry.querySelector('.q-opt-d').value;
+        const correct_answer = entry.querySelector('.q-correct').value;
+
+        if (!question_text || !option_a || !option_b || !option_c || !option_d || !correct_answer) {
+          // Jika ada pertanyaan (ada formnya) tapi salah satu field kosong, tandai tidak valid
+          // Kecuali jika SEMUA field kosong (mungkin dari addQuestionEntry() default)
+          if (question_text || option_a || option_b || option_c || option_d || correct_answer) {
+             isFormValid = false;
+          }
+        }
+        
+        // Hanya tambahkan pertanyaan jika teks pertanyaannya diisi (menghindari pertanyaan kosong)
+        if (question_text) {
+           questions.push({
+            question_text,
+            option_a,
+            option_b,
+            option_c,
+            option_d,
+            correct_answer
+          });
+        }
+      });
+      
+      // Cek ulang validitas HANYA jika ada pertanyaan yang ditambahkan
+      if (questions.length > 0) {
+           questionEntries.forEach(entry => {
+                const question_text = entry.querySelector('.q-text').value;
+                if(question_text) { // Hanya validasi entry yang diisi
+                    const option_a = entry.querySelector('.q-opt-a').value;
+                    const option_b = entry.querySelector('.q-opt-b').value;
+                    const option_c = entry.querySelector('.q-opt-c').value;
+                    const option_d = entry.querySelector('.q-opt-d').value;
+                    const correct_answer = entry.querySelector('.q-correct').value;
+                    if (!question_text || !option_a || !option_b || !option_c || !option_d || !correct_answer) {
+                         isFormValid = false;
+                    }
+                }
+           });
+      } else if (questionEntries.length > 0 && !isFormValid) {
+           // Kasus jika form pertanyaan pertama (default) diisi sebagian tapi tidak lengkap
+           const entry = questionEntries[0];
+           const q_text = entry.querySelector('.q-text').value;
+           const o_a = entry.querySelector('.q-opt-a').value;
+           const o_b = entry.querySelector('.q-opt-b').value;
+           const o_c = entry.querySelector('.q-opt-c').value;
+           const o_d = entry.querySelector('.q-opt-d').value;
+           const c_a = entry.querySelector('.q-correct').value;
+           
+           if(q_text || o_a || o_b || o_c || o_d || c_a) { // Jika ada yg diisi
+                isFormValid = false;
+           } else {
+                isFormValid = true; // Form default kosong, tidak apa-apa
+           }
+      }
+
+
+      if (passage_content === '<p><br></p>') {
+        showToast('Wacana tidak boleh kosong', 'error');
+        return;
+      }
+
+      if (!isFormValid) {
+        showToast('Jika Anda menambahkan pertanyaan, semua kolomnya wajib diisi', 'error');
+        return;
+      }
+
+      const editingId = editingIdInput.value;
+      const isEditing = !!editingId;
+      const method = isEditing ? 'PUT' : 'POST';
+      const url = isEditing ? `/api/reading/passage/${editingId}` : '/api/reading/passage';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            bab_id: babId,
+            passage_content,
+            questions: questions // Kirim 'questions' yang sudah difilter
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          throw new Error(errData.error || (isEditing ? 'Gagal memperbarui' : 'Gagal menambah'));
+        }
+
+        resetForm();
+        fetchReadingExercises();
+        showToast(isEditing ? 'Wacana berhasil diperbarui!' : 'Wacana berhasil ditambahkan!');
+
+      } catch (err) {
+        showToast(err.message, 'error');
+        console.error(err);
+      }
+    });
+
+    /**
+     * Event listener untuk tombol edit/delete
+     */
+    listContainer.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+
+      const id = target.dataset.id;
+
+      if (target.classList.contains('delete-btn')) {
+        deleteExercise(id);
+      } else if (target.classList.contains('edit-btn')) {
+        editExercise(id);
+      }
+    });
+
+    /**
+     * Event listener tombol batal edit
+     */
+    cancelEditButton.addEventListener('click', resetForm);
+
+    /**
+     * Event listener tombol tambah pertanyaan
+     */
+    addQuestionButton.addEventListener('click', () => addQuestionEntry());
+
+    /**
+     * Event listener tombol hapus pertanyaan
+     */
+    questionsContainer.addEventListener('click', (e) => {
+      if (e.target.classList.contains('remove-question-btn')) {
+        e.target.closest('.question-entry').remove();
+        
+        document.querySelectorAll('.question-entry').forEach((entry, index) => {
+          entry.querySelector('label').textContent = `Pertanyaan ${index + 1}`;
+        });
+      }
+    });
+
+    // ============================================
+    // INISIALISASI
+    // ============================================
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('chapter-title-display').textContent = babTitle ? `Bab: ${babTitle}` : 'Bab tidak ditemukan';
+      fetchReadingExercises();
+      addQuestionEntry();
+    });
+  </script>
+</body>
+</html>

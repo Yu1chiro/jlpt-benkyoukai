@@ -1,220 +1,1116 @@
 <!DOCTYPE html>
 <html lang="id">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>勉強中</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  
-  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet" />
-  <style>
-    /* Menghilangkan border dan padding default dari Quill */
-    .ql-container.ql-snow {
-      border: none;
-    }
-    .ql-editor {
-      padding: 0;
-      font-size: 1rem;
-      line-height: 1.7;
-      color: #333;
-    }
-    .ql-editor h1 { font-size: 2em; margin-bottom: 0.5em; }
-    .ql-editor h2 { font-size: 1.5em; margin-bottom: 0.5em; }
-    .ql-editor h3 { font-size: 1.25em; margin-bottom: 0.5em; }
-    .ql-editor ul, .ql-editor ol { margin-left: 1.5em; margin-bottom: 1em; }
-    .ql-editor p { margin-bottom: 1em; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勉強中</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet" />
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <script>
+        const THEME_KEY = 'theme-preference';
+        const htmlEl = document.documentElement;
+
+        // Fungsi untuk menerapkan tema dan menyimpan ke localStorage
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                htmlEl.classList.add('dark');
+            } else {
+                htmlEl.classList.remove('dark');
+            }
+            localStorage.setItem(THEME_KEY, theme);
+        };
+
+        // Fungsi untuk mendapatkan preferensi tema
+        const getPreferredTheme = () => {
+            const storedTheme = localStorage.getItem(THEME_KEY);
+            if (storedTheme) {
+                return storedTheme;
+            }
+            return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        };
+
+        // Terapkan tema secara instan sebelum halaman render
+        const currentTheme = getPreferredTheme();
+        applyTheme(currentTheme);
+    </script>
+
+    <style>
+        audio {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        /* [TAMBAH] Style untuk script choukai */
+        .choukai-script-container {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-out, padding-top 0.5s ease-out, margin-top 0.5s ease-out;
+            background-color: var(--bg-color);
+            border-top: 1px solid transparent; /* Mulai transparan */
+            margin-top: 0;
+            padding-top: 0;
+        }
+        .choukai-script-container.visible {
+            max-height: 1000px; /* Nilai besar untuk menampung konten */
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top-color: var(--border-color); /* Muncul saat visible */
+            transition: max-height 0.5s ease-in, padding-top 0.5s ease-in, margin-top 0.5s ease-in;
+        }
+        .choukai-script-container .ql-editor {
+            padding-top: 0.5rem;
+        }
+        /* Menghilangkan border dan padding default dari Quill */
+        .ql-container.ql-snow {
+            border: none;
+        }
+
+        .ql-editor {
+            padding: 0;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .ql-editor p {
+            margin-bottom: 1em;
+        }
+
+        /* CSS Flashcard */
+        .flashcard {
+            perspective: 1000px;
+        }
+
+        .flashcard-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+
+        .flashcard.is-flipped .flashcard-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flashcard-front,
+        .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+        }
+
+        .flashcard-back {
+            transform: rotateY(180deg);
+        }
+
+        /* Style untuk Audio Player */
+        audio {
+            width: 100%;
+            margin-top: 0.5rem;
+        }
+
+        /* === Dark Mode Styles === */
+        :root {
+            /* Light Mode (Default) */
+            --bg-color: #f5f5f4;
+            --text-color-p: #333;
+            --bg-header: rgba(255, 255, 255, 0.9);
+            --border-color: #e7e5e4;
+            --text-primary: #1c1917;
+            --text-secondary: #78716c;
+            --card-bg: #ffffff;
+            --card-hover: #f5f5f4;
+            --button-hover: #e7e5e4;
+            --flashcard-front-bg: #450a0a;
+            --flashcard-back-bg: #713f12;
+            --flashcard-text: #ffffff;
+        }
+
+        .dark {
+            /* Dark Mode */
+            --bg-color: #1c1c1c;
+            --text-color-p: #e5e5e5;
+            --bg-header: rgba(28, 28, 28, 0.9);
+            --border-color: #44403c;
+            --text-primary: #f5f5f4;
+            --text-secondary: #a8a29e;
+            --card-bg: #292524;
+            --card-hover: #3f3f46;
+            --button-hover: #3f3f46;
+            --flashcard-front-bg: #fde68a;
+            --flashcard-back-bg: #facc15;
+            --flashcard-text: #450a0a;
+        }
+
+        /* Menerapkan variabel */
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        p {
+            color: var(--text-color-p);
+            transition: color 0.3s ease;
+        }
+
+        .ql-editor {
+            color: var(--text-color-p);
+        }
+
+        .ql-editor p {
+            color: var(--text-color-p);
+        }
+
+        .dark .ql-editor strong {
+            color: var(--text-primary);
+        }
+
+        header {
+            background-color: var(--bg-header);
+            border-color: var(--border-color);
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+        }
+
+        #tab-nav {
+            border-color: var(--border-color);
+            transition: border-color 0.3s ease;
+        }
+
+        header a,
+        #chapter-title,
+        #tab-nav button {
+            color: var(--text-secondary);
+            transition: color 0.3s ease, border-color 0.3s ease;
+        }
+
+        header a:hover,
+        #tab-nav button:hover {
+            color: var(--text-primary);
+            border-color: var(--text-secondary);
+        }
+
+        #tab-nav button.border-stone-900 {
+            color: var(--text-primary);
+            border-color: var(--text-primary);
+        }
+
+        .dark #tab-nav button.border-stone-900 {
+            border-color: var(--text-primary);
+        }
+
+        .dark .bg-white {
+            background-color: var(--card-bg);
+        }
+
+        .dark .border-stone-100 {
+            border-color: var(--border-color);
+        }
+
+        .dark .border-stone-200 {
+            border-color: var(--border-color);
+        }
+
+        .dark .text-stone-900 {
+            color: var(--text-primary);
+        }
+
+        .dark .text-stone-800 {
+            color: var(--text-primary);
+        }
+
+        .dark .text-stone-700 {
+            color: var(--text-primary);
+        }
+
+        .dark .text-stone-600 {
+            color: var(--text-secondary);
+        }
+
+        .dark .text-stone-500 {
+            color: var(--text-secondary);
+        }
+
+        .dark .bg-stone-100 {
+            background-color: var(--bg-color);
+        }
+
+        .dark .hover\:bg-stone-50:hover {
+            background-color: var(--card-hover);
+        }
+
+        .dark .hover\:bg-stone-100:hover {
+            background-color: var(--button-hover);
+        }
+
+        .dark .hover\:bg-stone-200:hover {
+            background-color: var(--button-hover);
+        }
+
+        .dark .bg-stone-900 {
+            background-color: var(--text-primary);
+            color: var(--bg-color);
+        }
+
+        .dark .hover\:bg-stone-800:hover {
+            background-color: var(--text-secondary);
+            color: var(--bg-color);
+        }
+
+        .dark .focus\:ring-stone-900:focus {
+            --tw-ring-color: var(--text-primary);
+        }
+
+        .dark .text-stone-900.focus\:ring-stone-900 {
+            color: var(--text-primary);
+        }
+
+        #flashcard-front {
+            background-color: var(--flashcard-front-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        #flashcard-front p {
+            color: var(--flashcard-text);
+            transition: color 0.3s ease;
+        }
+
+        #flashcard-back {
+            background-color: var(--flashcard-back-bg);
+            transition: background-color 0.3s ease;
+        }
+
+        #flashcard-back p {
+            color: var(--flashcard-text);
+            transition: color 0.3s ease;
+        }
+
+        /* Tombol Dark Mode - Styling Modern */
+        #theme-toggle-btn {
+            color: var(--text-secondary);
+            position: relative;
+        }
+
+        #theme-toggle-btn:hover {
+            color: var(--text-primary);
+            background-color: var(--button-hover);
+        }
+
+        /* Animasi smooth untuk icon */
+        #theme-toggle-btn i {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+    </style>
 </head>
-<body class="bg-stone-50 min-h-screen antialiased">
 
-  <header class="bg-white border-b border-stone-200 sticky top-0 z-10 backdrop-blur-sm bg-white/90">
-    <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center gap-4">
-      <a href="/" class="text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200 flex items-center gap-2 group">
-        <span class="transform group-hover:-translate-x-1 transition-transform duration-200">&larr;</span>
-        <span>Kembali ke Daftar</span>
-      </a>
-      <h2 id="chapter-title" class="text-sm font-medium text-stone-500 text-right truncate max-w-xs sm:max-w-md">
-        Memuat...
-      </h2>
-    </nav>
-  </header>
+<body class="min-h-screen antialiased">
 
-  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-4xl">
-    
-    <div class="mb-8">
-      <div class="border-b border-stone-200" id="tab-nav">
-        <nav class="flex gap-1" aria-label="Tabs">
-          <button 
-            class_default="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200" 
-            class_active="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900" 
-            data-tab="kosakata" 
-            class="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900">
-            Kosakata
-          </button>
-          <button 
-            class_default="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200" 
-            class_active="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900"
-            data-tab="polakalimat" 
-            class="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200">
-            Pola Kalimat
-          </button>
-          <button 
-            class_default="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200" 
-            class_active="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900"
-            data-tab="quiz" 
-            class="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200">
-            Take Quiz
-          </button>
-        </nav>
-      </div>
-    </div>
+    <header class="border-b border-stone-200 sticky top-0 z-10 backdrop-blur-sm">
 
-    <div id="tab-content">
-      <div id="kosakata" class="tab-pane active">
-        <div id="vocab-content" class="space-y-6">
-          <p class="text-sm text-stone-500">Memuat kosakata...</p>
-        </div>
-      </div>
-      
-      <div id="polakalimat" class="tab-pane hidden">
-        <div id="grammar-content" class="space-y-8">
-           <p class="text-sm text-stone-500">Memuat pola kalimat...</p>
-        </div>
-      </div> <div id="quiz" class="tab-pane hidden">
-        <div id="quiz-stats" class="space-y-8">
-            <p class="text-sm text-stone-500">Jika kamu sudah memahami materi pada bab ini silahkan take quiz</p>
-            <a id="quiz-button" href="#" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
-             Mulai quiz
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center gap-4">
+            <a href="/" class="text-sm font-medium transition-colors duration-200 flex items-center gap-2 group">
+                <span class="transform group-hover:-translate-x-1 transition-transform duration-200">&larr;</span>
+                <span>Kembali ke Daftar</span>
             </a>
+
+            <div class="flex items-center gap-2 sm:gap-4">
+                <h2 id="chapter-title" class="text-sm font-medium text-right truncate max-w-[150px] sm:max-w-md">
+                    Memuat...
+                </h2>
+
+                <button id="theme-toggle-btn"
+                    class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full transition-colors duration-200"
+                    aria-label="Toggle dark mode">
+                    <!-- Sun Icon (Light Mode) -->
+                    <i id="theme-icon-sun" class="fa-solid fa-sun text-xl"></i>
+                    <!-- Moon Icon (Dark Mode) -->
+                    <i id="theme-icon-moon" class="fa-solid fa-moon text-xl hidden"></i>
+                </button>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-4xl">
+
+        <div class="mb-8">
+            <div class="border-b w-full overflow-x-auto" id="tab-nav">
+                <nav class="flex gap-1 min-w-max" aria-label="Tabs">
+                    <button
+                        class_default="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap"
+                        class_active="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap"
+                        data-tab="kosakata"
+                        class="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap">
+                        Kotoba
+                    </button>
+                    <button
+                        class_default="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap"
+                        class_active="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap"
+                        data-tab="flashcards"
+                        class="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap">
+                        Flashcards
+                    </button>
+                    <button
+                        class_default="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap"
+                        class_active="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap"
+                        data-tab="polakalimat"
+                        class="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap">
+                        Bunpou
+                    </button>
+                    <button
+                        class_default="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap"
+                        class_active="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap"
+                        data-tab="quiz"
+                        class="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap">
+                        Quiz
+                    </button>
+                    <button
+                        class_default="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap"
+                        class_active="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap"
+                        data-tab="reading"
+                        class="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap">
+                        Dokkai
+                    </button>
+                    <button
+                        class_default="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap"
+                        class_active="px-4 py-3 text-sm font-medium border-b-2 border-stone-900 whitespace-nowrap"
+                        data-tab="listening"
+                        class="px-4 py-3 text-sm font-medium hover:border-stone-300 border-b-2 border-transparent transition-all duration-200 whitespace-nowrap">
+                        Choukai
+                    </button>
+                </nav>
+            </div>
         </div>
-      </div>
-    </div> </main>
 
-  <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const babId = urlParams.get('babId');
-    
-    const vocabContainer = document.getElementById('vocab-content');
-    const grammarContainer = document.getElementById('grammar-content');
-    const quizStats = document.getElementById('quiz-stats'); // Ini sudah benar
-    const titleEl = document.getElementById('chapter-title');
-    const quizButton = document.getElementById('quiz-button'); // Ini sudah benar
-
-    // Cek jika babId ada
-    if (!babId) {
-      document.body.innerHTML = '<div class="text-center p-10"><h1 class="text-2xl font-bold text-red-600">Error: ID Bab tidak ditemukan.</h1><a href="/" class="text-blue-500 hover:underline">Kembali ke Home</a></div>';
-    } else {
-      // Set link kuis
-      quizButton.href = `/quiz?babId=${babId}`;
-
-      // Logika Tab
-      document.getElementById('tab-nav').addEventListener('click', (e) => {
-        if (e.target.tagName === 'BUTTON') {
-          const tabId = e.target.dataset.tab;
-          
-          document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
-          document.querySelectorAll('#tab-nav button').forEach(btn => {
-            btn.className = btn.getAttribute('class_default');
-          });
-
-          // Ini sekarang akan bekerja dengan benar
-          document.getElementById(tabId).classList.remove('hidden'); 
-          e.target.className = e.target.getAttribute('class_active');
-        }
-      });
-
-      // Fetch Judul Bab
-      async function fetchChapterInfo() {
-        try {
-          const res = await fetch('/api/chapters');
-          const chapters = await res.json();
-          const chapter = chapters.find(c => c.id == babId);
-          if (chapter) {
-            titleEl.textContent = chapter.title;
-            document.title = `Belajar - ${chapter.title}`;
-          } else {
-            titleEl.textContent = 'Bab Tidak Ditemukan';
-          }
-        } catch (err) {
-          console.error('Error fetching chapter info:', err);
-          titleEl.textContent = 'Error';
-        }
-      }
-
-      // Fetch Kosakata (Sesuai Revisi Terakhir)
-      async function fetchVocab() {
-        try {
-          const res = await fetch(`/api/vocabularies/${babId}`);
-          const data = await res.json();
-          vocabContainer.innerHTML = ''; // Kosongkan
-          
-          if (data.length === 0) {
-            vocabContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada kosakata untuk bab ini.</p>';
-            return;
-          }
-          
-          // Gabungkan semua entri konten menjadi satu
-          data.forEach(v => {
-            vocabContainer.innerHTML += `
-              <div class="py-6 border-b border-stone-100 last:border-b-0">
-                <div class="ql-container">
-                  <div class="ql-editor text-stone-700 leading-relaxed">${v.content || ''}</div>
+        <div id="tab-content">
+            <div id="kosakata" class="tab-pane active">
+                <div id="vocab-content" class="space-y-6">
+                    <p class="text-sm">Memuat kosakata...</p>
                 </div>
-              </div>
-            `;
-          });
-        } catch (err) {
-          console.error('Error fetching vocab:', err);
-          vocabContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat kosakata.</p>';
-        }
-      }
+            </div>
 
-      // Fetch Pola Kalimat
-      async function fetchGrammar() {
-        try {
-          const res = await fetch(`/api/grammar/${babId}`);
-          const data = await res.json();
-          grammarContainer.innerHTML = ''; // Kosongkan
-          
-          if (data.length === 0) {
-            grammarContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada pola kalimat untuk bab ini.</p>';
-            return;
-          }
-          
-          data.forEach(g => {
-            grammarContainer.innerHTML += `
-              <div class="py-6 border-b border-stone-100 last:border-b-0">
-                <h3 class="text-xl font-semibold text-stone-900 mb-4 tracking-tight">${g.pattern}</h3>
-                <div class="space-y-4">
-                  <div>
-                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Penjelasan</h4>
-                    <div class="ql-container">
-                      <div class="ql-editor text-stone-700 leading-relaxed">${g.explanation || 'N/A'}</div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Contoh</h4>
-                    <div class="ql-container">
-                      <div class="ql-editor text-stone-700 leading-relaxed">${g.example || 'N/A'}</div>
-                    </div>
-                  </div>
+            <div id="flashcards" class="tab-pane hidden">
+                <div id="flashcard-start-screen" class="text-center">
+                    <p class="text-sm mb-4" id="flashcard-loading-text">Memuat kosakata untuk flashcards...</p>
+                    <button id="start-session-btn"
+                        class="hidden inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+                        Mulai Sesi Latihan (10 Kartu)
+                    </button>
+                    <p id="flashcard-empty-text" class="text-sm hidden">Belum ada kosakata di bab ini untuk dijadikan
+                        flashcard.</p>
                 </div>
-              </div>
-            `;
-          });
-        } catch (err) {
-          console.error('Error fetching grammar:', err);
-          grammarContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat pola kalimat.</p>';
-        }
-      }
+                <div id="flashcard-main-screen" class="hidden">
+                    <div id="flashcard" class="flashcard h-64 sm:h-80 w-full mb-6 cursor-pointer rounded-xl"
+                        title="Klik untuk membalik kartu">
+                        <div id="flashcard-inner" class="flashcard-inner w-full h-full rounded-xl shadow-lg">
+                            <div id="flashcard-front"
+                                class="flashcard-front rounded-xl flex items-center justify-center p-6">
+                                <p class="text-4xl sm:text-5xl font-bold text-center"></p>
+                            </div>
+                            <div id="flashcard-back"
+                                class="flashcard-back rounded-xl flex items-center justify-center p-6">
+                                <p class="text-2xl sm:text-3xl font-medium text-center"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <button id="prev-card-btn"
+                            class="px-4 py-2 text-sm font-medium bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            &larr; Sebelumnya
+                        </button>
+                        <p id="flashcard-progress" class="text-sm font-medium">Kartu 1 / 10</p>
+                        <button id="next-card-btn"
+                            class="px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 disabled:opacity-50">
+                            Selanjutnya &rarr;
+                        </button>
+                    </div>
+                </div>
+                <div id="flashcard-end-screen" class="hidden text-center">
+                    <h3 class="text-2xl font-bold mb-4">Sesi Selesai!</h3>
+                    <p class="mb-6">Anda telah menyelesaikan latihan. Bagus!</p>
+                    <button id="restart-session-btn"
+                        class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+                        Lanjut Sesi
+                    </button>
+                </div>
+            </div>
 
-      // Panggil semua fungsi fetch saat halaman dimuat
-      document.addEventListener('DOMContentLoaded', () => {
-        fetchChapterInfo();
-        fetchVocab();
-        fetchGrammar();
-      });
-    }
-  </script>
+            <div id="polakalimat" class="tab-pane hidden">
+                <div id="grammar-content" class="space-y-8">
+                    <p class="text-sm">Memuat pola kalimat...</p>
+                </div>
+            </div>
+
+            <div id="quiz" class="tab-pane hidden">
+                <div id="quiz-stats" class="space-y-8">
+                    <p class="text-sm">Jika kamu sudah memahami kosakata dan pola kalimat silahkan kerjakan quiz untuk bunpou, jika sudah mengerjakan silahkan lanjut pada materi dokkai dan choukai</p>
+                    <a id="quiz-button" href="#"
+                        class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+                        Mulai quiz
+                    </a>
+                </div>
+            </div>
+
+            <div id="reading" class="tab-pane hidden">
+                <div id="reading-content" class="space-y-12">
+                    <p class="text-sm">Memuat latihan membaca...</p>
+                </div>
+                <div id="dokkai-results" class="hidden mt-8"></div>
+            </div>
+
+            <div id="listening" class="tab-pane hidden">
+                <div id="listening-content" class="space-y-6">
+                    <p class="text-sm">Memuat latihan mendengar...</p>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const babId = urlParams.get('babId');
+
+        const vocabContainer = document.getElementById('vocab-content');
+        const grammarContainer = document.getElementById('grammar-content');
+        const readingContainer = document.getElementById('reading-content');
+        const listeningContainer = document.getElementById('listening-content');
+        const quizStats = document.getElementById('quiz-stats');
+        const titleEl = document.getElementById('chapter-title');
+        const quizButton = document.getElementById('quiz-button');
+
+        let allVocab = [];
+        let sessionCards = [];
+        let currentCardIndex = 0;
+        const SESSION_SIZE = 10;
+
+        const flashcardTab = document.getElementById('flashcards');
+        const startScreen = document.getElementById('flashcard-start-screen');
+        const mainScreen = document.getElementById('flashcard-main-screen');
+        const endScreen = document.getElementById('flashcard-end-screen');
+        const loadingText = document.getElementById('flashcard-loading-text');
+        const emptyText = document.getElementById('flashcard-empty-text');
+        const startBtn = document.getElementById('start-session-btn');
+        const restartBtn = document.getElementById('restart-session-btn');
+        const flashcardEl = document.getElementById('flashcard');
+        const cardFrontEl = document.querySelector('#flashcard-front p');
+        const cardBackEl = document.querySelector('#flashcard-back p');
+        const progressText = document.getElementById('flashcard-progress');
+        const prevBtn = document.getElementById('prev-card-btn');
+        const nextBtn = document.getElementById('next-card-btn');
+
+        if (!babId) {
+            document.body.innerHTML = '<div class="text-center p-10"><h1 class="text-2xl font-bold text-red-600">Error: ID Bab tidak ditemukan.</h1><a href="/" class="text-blue-500 hover:underline">Kembali ke Home</a></div>';
+        } else {
+
+            // FUNGSI CACHING MATERI (studyCache_...) DIHAPUS
+            // function getCacheKey(dataType) { ... }
+            // function getCachedData(dataType) { ... }
+            // function setCachedData(dataType, data) { ... }
+
+            quizButton.href = `/quiz?babId=${babId}`;
+
+            document.getElementById('tab-nav').addEventListener('click', (e) => {
+                if (e.target.tagName === 'BUTTON') {
+                    const tabId = e.target.dataset.tab;
+                    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+                    document.querySelectorAll('#tab-nav button').forEach(btn => {
+                        btn.className = btn.getAttribute('class_default');
+                    });
+                    document.getElementById(tabId).classList.remove('hidden');
+                    e.target.className = e.target.getAttribute('class_active');
+                    e.target.classList.add('border-stone-900');
+                }
+            });
+
+            function renderChapterTitle(chapters) {
+                const chapter = chapters.find(c => c.id == babId);
+                if (chapter) {
+                    titleEl.textContent = chapter.title;
+                    document.title = `Belajar - ${chapter.title}`;
+                } else {
+                    titleEl.textContent = 'Bab Tidak Ditemukan';
+                }
+            }
+            async function fetchChapterInfo() {
+                // const CACHE_KEY = 'studyCache_allChapters'; // Dihapus
+                // const cachedData = localStorage.getItem(CACHE_KEY); // Dihapus
+
+                // if (cachedData) { ... } // Blok cache dihapus
+
+                try {
+                    console.log('Judul bab di-fetch dari server...');
+                    const res = await fetch('/api/chapters');
+                    const chapters = await res.json();
+                    // localStorage.setItem(CACHE_KEY, JSON.stringify(chapters)); // Dihapus
+                    renderChapterTitle(chapters);
+                } catch (err) {
+                    console.error('Error fetching chapter info:', err);
+                    titleEl.textContent = 'Error';
+                }
+            }
+
+            function renderVocab(data) {
+                vocabContainer.innerHTML = '';
+                allVocab = [];
+                if (data.length === 0) {
+                    vocabContainer.innerHTML = '<p class="text-sm">Belum ada kosakata untuk bab ini.</p>';
+                } else {
+                    data.forEach(v => {
+                        vocabContainer.innerHTML += `
+                        <div class="py-6 border-b border-stone-100 last:border-b-0">
+                            <div class="ql-container">
+                                <div class="ql-editor leading-relaxed">${v.content || ''}</div>
+                            </div>
+                        </div>
+                        `;
+                        const parsedCards = parseVocabEntry(v.content);
+                        if (parsedCards.length > 0) {
+                            allVocab.push(...parsedCards);
+                        }
+                    });
+                }
+                initFlashcardTab();
+            }
+            async function fetchVocab() {
+                // const DATA_TYPE = 'vocab'; // Dihapus
+                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
+
+                // if (cachedData) { ... } // Blok cache dihapus
+
+                try {
+                    console.log('Kosakata di-fetch dari server...');
+                    const res = await fetch(`/api/vocabularies/${babId}`);
+                    const data = await res.json();
+                    // setCachedData(DATA_TYPE, data); // Dihapus
+                    renderVocab(data);
+                } catch (err) {
+                    console.error('Error fetching vocab:', err);
+                    vocabContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat kosakata.</p>';
+                    loadingText.textContent = 'Gagal memuat flashcards.';
+                    loadingText.classList.add('text-red-600');
+                }
+            }
+
+            function renderGrammar(data) {
+                grammarContainer.innerHTML = '';
+                if (data.length === 0) {
+                    grammarContainer.innerHTML = '<p class="text-sm">Belum ada pola kalimat untuk bab ini.</p>';
+                    return;
+                }
+                data.forEach(g => {
+                    grammarContainer.innerHTML += `
+                        <div class="py-6 border-b border-stone-100 last:border-b-0">
+                            <h3 class="text-xl font-semibold text-stone-900 mb-4 tracking-tight">${g.pattern}</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Penjelasan</h4>
+                                    <div class="ql-container">
+                                        <div class="ql-editor leading-relaxed">${g.explanation || 'N/A'}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Contoh</h4>
+                                    <div class="ql-container">
+                                        <div class="ql-editor leading-relaxed">${g.example || 'N/A'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                });
+            }
+            async function fetchGrammar() {
+                // const DATA_TYPE = 'grammar'; // Dihapus
+                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
+
+                // if (cachedData) { ... } // Blok cache dihapus
+
+                try {
+                    console.log('Pola kalimat di-fetch dari server...');
+                    const res = await fetch(`/api/grammar/${babId}`);
+                    const data = await res.json();
+                    // setCachedData(DATA_TYPE, data); // Dihapus
+                    renderGrammar(data);
+                } catch (err) {
+                    console.error('Error fetching grammar:', err);
+                    grammarContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat pola kalimat.</p>';
+                }
+            }
+
+            function renderReading(exercises) {
+                // 'exercises' di sini adalah array of PASSAGES
+                readingContainer.innerHTML = '';
+                if (!exercises || exercises.length === 0) {
+                    readingContainer.innerHTML = '<p class="text-sm">Belum ada latihan membaca untuk bab ini.</p>';
+                    return;
+                }
+
+                let formHTML = '<form id="dokkai-form">';
+                
+                // 1. Loop untuk setiap Wacana (Passage)
+                exercises.forEach((passage, passageIndex) => {
+                    formHTML += `
+                        <div class="bg-white p-6 rounded-lg border border-stone-200 mb-8">
+                            <h3 class="text-lg font-semibold text-stone-900 mb-4">読解 ${passageIndex + 1}</h3>
+                            <div class="mb-6">
+                                <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Wacana</h4>
+                                <div class="ql-container rounded-lg">
+                                    <div class="ql-editor leading-relaxed">${passage.passage_content || ''}</div>
+                                </div>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-4">Pertanyaan</h4>
+                                <div class="space-y-6">
+                        `;
+
+                    // 2. Loop untuk setiap Pertanyaan (Question) di dalam wacana ini
+                    if (passage.questions && passage.questions.length > 0) {
+                        passage.questions.forEach((q, qIndex) => {
+                            formHTML += `
+                                    <div class="border-t border-stone-100 pt-6 first:border-t-0 first:pt-0">
+                                        <p class="text-base font-medium text-stone-800 mb-4">${qIndex + 1}. ${q.question_text || ''}</p>
+                                        <div class="space-y-3">
+                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                                <input type="radio" name="dokkai_q_${q.id}" value="A" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                                <span class="text-sm text-stone-700">A. ${q.option_a || ''}</span>
+                                            </label>
+                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                                <input type="radio" name="dokkai_q_${q.id}" value="B" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                                <span class="text-sm text-stone-700">B. ${q.option_b || ''}</span>
+                                            </label>
+                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                                <input type="radio" name="dokkai_q_${q.id}" value="C" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                                <span class="text-sm text-stone-700">C. ${q.option_c || ''}</span>
+                                            </label>
+                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                                <input type="radio" name="dokkai_q_${q.id}" value="D" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                                <span class="text-sm text-stone-700">D. ${q.option_d || ''}</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                `;
+                        });
+                    } else {
+                         formHTML += '<p class="text-sm text-stone-500">Wacana ini belum memiliki pertanyaan.</p>';
+                    }
+
+                    formHTML += `
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                });
+                
+                // Hanya tampilkan tombol submit jika ada pertanyaan
+                if (exercises.some(ex => ex.questions && ex.questions.length > 0)) {
+                    formHTML += `
+                        <button type="submit" class="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+                            Kumpulkan Jawaban Dokkai
+                        </button>
+                        `;
+                }
+
+                formHTML += '</form>';
+
+                readingContainer.innerHTML = formHTML;
+
+                // Hanya tambahkan event listener jika form-nya ada
+                const dokkaiForm = document.getElementById('dokkai-form');
+                if (dokkaiForm) {
+                    dokkaiForm.addEventListener('submit', handleDokkaiSubmit);
+                }
+            }
+            async function fetchReading() {
+                // const DATA_TYPE = 'reading'; // Dihapus
+                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
+
+                // if (cachedData) { ... } // Blok cache dihapus
+
+                try {
+                    console.log('Dokkai di-fetch dari server...');
+                    const res = await fetch(`/api/reading/${babId}`);
+                    const exercises = await res.json();
+                    // setCachedData(DATA_TYPE, exercises); // Dihapus
+                    renderReading(exercises);
+                } catch (err) {
+                    console.error('Error fetching reading exercises:', err);
+                    readingContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat latihan membaca.</p>';
+                }
+            }
+
+            async function handleDokkaiSubmit(e) {
+                e.preventDefault();
+                const form = e.target;
+                const formData = new FormData(form);
+                const answers = [];
+
+                for (let [name, value] of formData.entries()) {
+                    // Mencari nama yang dimulai dengan 'dokkai_q_'
+                    if (name.startsWith('dokkai_q_')) {
+                        // Ambil ID dari bagian ke-3 (split by '_')
+                        const questionId = parseInt(name.split('_')[2]);
+                        answers.push({ questionId: questionId, answer: value });
+                    }
+                }
+
+                const submitButton = form.querySelector('button[type="submit"]');
+                submitButton.disabled = true;
+                submitButton.textContent = 'Memeriksa...';
+
+                try {
+                    const res = await fetch(`/api/submit-reading/${babId}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ answers })
+                    });
+                    if (!res.ok) throw new Error('Gagal mengirim jawaban');
+                    const data = await res.json();
+                    renderDokkaiResults(data);
+                } catch (err) {
+                    console.error('Error submitting dokkai:', err);
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Error! Coba Lagi';
+                }
+            }
+            function renderDokkaiResults(data) {
+                const resultsDiv = document.getElementById('dokkai-results');
+                resultsDiv.innerHTML = `
+                <div class="bg-white p-6 rounded-lg border border-stone-200">
+                    <h3 class="text-xl font-semibold text-stone-900 mb-4">Hasil Latihan Membaca</h3>
+                    <p class="text-lg">Skor Anda: <span class="font-bold text-green-600">${data.score}</span> / ${data.total}</p>
+                </div>
+                `;
+                resultsDiv.classList.remove('hidden');
+                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                data.results.forEach(result => {
+                    const questionId = result.questionId;
+                    // Mencari elemen berdasarkan nama 'dokkai_q_...'
+                    const radios = document.getElementsByName(`dokkai_q_${questionId}`);
+                    radios.forEach(radio => {
+                        radio.disabled = true;
+                        const label = radio.closest('label');
+                        label.classList.remove('hover:bg-stone-50', 'cursor-pointer');
+                        if (radio.value === result.correctAnswer) {
+                            label.classList.add('bg-green-100', 'border-green-300');
+                        }
+                        if (radio.checked && !result.isCorrect) {
+                            label.classList.add('bg-red-100', 'border-red-300');
+                        }
+                    });
+                });
+                document.getElementById('dokkai-form').querySelector('button[type="submit"]').classList.add('hidden');
+            }
+            function renderListening(exercises) {
+                listeningContainer.innerHTML = '';
+                if (exercises.length === 0) {
+                    listeningContainer.innerHTML = '<p class="text-sm">Belum ada latihan mendengar untuk bab ini.</p>';
+                    return;
+                }
+                exercises.forEach((ex, index) => {
+                    const playableUrl = ex.audio_url || '';
+
+                    // [TAMBAH] Cek apakah ada script (bukan kosong atau <p><br></p>)
+                    const hasScript = ex.script && ex.script.trim() !== '' && ex.script.trim() !== '<p><br></p>';
+
+                    listeningContainer.innerHTML += `
+                        <div class="bg-white p-6 rounded-lg border border-stone-200">
+                            <h3 class="hidden text-lg font-semibold text-stone-900 mb-2">Latihan Mendengar ${index + 1}</h3>
+                            <h3 class="text-lg font-semibold text-stone-900 mb-3">${ex.title || ''}</h3>
+                            <audio controls src="${playableUrl}">
+                                Browser Anda tidak mendukung elemen audio.
+                            </audio>
+
+                            ${hasScript ? `
+                            <div class="mt-4">
+                                <button 
+                                    type="button" 
+                                    class="toggle-script-btn inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors"
+                                    data-target="script-${ex.id}"
+                                >
+                                    <i class="fa-solid fa-eye"></i>
+                                    <span>Tampilkan Teks Jawaban</span>
+                                </button>
+                                <div id="script-${ex.id}" class="choukai-script-container">
+                                    <div class="ql-container">
+                                        <div class="ql-editor">${ex.script}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            ` : ''}
+                        </div>
+                        `;
+                });
+                
+                // [TAMBAH] Panggil fungsi untuk setup event listener tombol mata
+                setupListeningToggles();
+            }
+           async function fetchListening() {
+                // const DATA_TYPE = 'listening'; // Dihapus
+                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
+
+                // if (cachedData) { ... } // Blok cache dihapus
+
+                try {
+                    console.log('Choukai di-fetch dari server...');
+                    const res = await fetch(`/api/listening/${babId}`);
+                    const exercises = await res.json();
+                    // setCachedData(DATA_TYPE, exercises); // Dihapus
+                    renderListening(exercises);
+                } catch (err) {
+                    console.error('Error fetching listening exercises:', err);
+                    listeningContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat latihan mendengar.</p>';
+                }
+            }
+
+            // [TAMBAH] Fungsi baru untuk menangani tombol show/hide script
+            function setupListeningToggles() {
+                // Gunakan event delegation pada container
+                listeningContainer.addEventListener('click', (e) => {
+                    const toggleBtn = e.target.closest('.toggle-script-btn');
+                    if (!toggleBtn) return; // Klik bukan pada tombol
+
+                    const targetId = toggleBtn.dataset.target;
+                    const scriptContainer = document.getElementById(targetId);
+                    const icon = toggleBtn.querySelector('i');
+                    const span = toggleBtn.querySelector('span');
+
+                    if (scriptContainer) {
+                        // Toggle class 'visible'
+                        const isVisible = scriptContainer.classList.toggle('visible');
+                        
+                        // Ubah ikon dan teks berdasarkan status 'visible'
+                        if (isVisible) {
+                            icon.classList.remove('fa-eye');
+                            icon.classList.add('fa-eye-slash');
+                            span.textContent = 'Sembunyikan Teks Jawaban';
+                        } else {
+                            icon.classList.remove('fa-eye-slash');
+                            icon.classList.add('fa-eye');
+                            span.textContent = 'Tampilkan Teks Jawaban';
+                        }
+                    }
+                });
+            }
+
+            // FUNGSI CACHE FLASHCARD (flashcard_progress_...) TETAP DIPERTAHANKAN
+            function getStorageKey() { return `flashcard_progress_${babId}`; }
+            function getSeenCards() {
+                const key = getStorageKey();
+                const seen = localStorage.getItem(key);
+                return seen ? new Set(JSON.parse(seen)) : new Set();
+            }
+            function markCardAsSeen(cardId) {
+                const key = getStorageKey();
+                let seenSet = getSeenCards();
+                seenSet.add(cardId);
+                localStorage.setItem(key, JSON.stringify(Array.from(seenSet)));
+            }
+            function initFlashcardTab() {
+                loadingText.classList.add('hidden');
+                if (allVocab.length > 0) {
+                    const seenCardIds = getSeenCards();
+                    const newCardCount = allVocab.filter(card => !seenCardIds.has(card.id)).length;
+                    startBtn.classList.remove('hidden');
+                    let sessionCount, btnText, restartText;
+                    if (newCardCount > 0) {
+                        sessionCount = Math.min(SESSION_SIZE, newCardCount);
+                        btnText = `Mulai Sesi (${sessionCount} Kartu Baru)`;
+                        restartText = `Lanjut Sesi (${sessionCount} Kartu Baru)`;
+                    } else {
+                        sessionCount = Math.min(SESSION_SIZE, allVocab.length);
+                        btnText = `Ulas Sesi (${sessionCount} Kartu)`;
+                        restartText = `Ulas Sesi Lagi (${sessionCount} Kartu)`;
+                    }
+                    startBtn.textContent = btnText;
+                    restartBtn.textContent = restartText;
+                    endScreen.querySelector('p').textContent = `Anda telah menyelesaikan latihan untuk ${sessionCards.length || sessionCount} kartu. Bagus!`;
+                } else {
+                    emptyText.classList.remove('hidden');
+                    if (vocabContainer.textContent.includes("Belum ada kosakata")) {
+                        emptyText.textContent = "Belum ada kosakata di bab ini untuk dijadikan flashcard.";
+                    }
+                }
+            }
+            
+            function startFlashcardSession() {
+                currentCardIndex = 0;
+                const seenCardIds = getSeenCards();
+                const newCards = allVocab.filter(card => !seenCardIds.has(card.id));
+                const seenCards = allVocab.filter(card => seenCardIds.has(card.id));
+                sessionCards = [];
+                const shuffledNew = shuffleArray([...newCards]);
+                sessionCards = shuffledNew.slice(0, Math.min(SESSION_SIZE, shuffledNew.length));
+                const remainingSlots = SESSION_SIZE - sessionCards.length;
+                if (remainingSlots > 0 && seenCards.length > 0) {
+                    const shuffledSeen = shuffleArray([...seenCards]);
+                    sessionCards.push(...shuffledSeen.slice(0, Math.min(remainingSlots, shuffledSeen.length)));
+                }
+                if (sessionCards.length === 0 && allVocab.length > 0) {
+                    const shuffledSeen = shuffleArray([...seenCards]);
+                    sessionCards = shuffledSeen.slice(0, Math.min(SESSION_SIZE, allVocab.length));
+                }
+                startScreen.classList.add('hidden');
+                endScreen.classList.add('hidden');
+                mainScreen.classList.remove('hidden');
+                if (sessionCards.length > 0) {
+                    displayCard();
+                } else {
+                    mainScreen.classList.add('hidden');
+                    startScreen.classList.remove('hidden');
+                    initFlashcardTab();
+                }
+            }
+            function displayCard() {
+                const card = sessionCards[currentCardIndex];
+                flashcardEl.classList.remove('is-flipped');
+                cardFrontEl.textContent = card.front;
+                cardBackEl.textContent = card.back;
+                progressText.textContent = `Kartu ${currentCardIndex + 1} / ${sessionCards.length}`;
+                prevBtn.disabled = (currentCardIndex === 0);
+                if (currentCardIndex === sessionCards.length - 1) {
+                    nextBtn.textContent = 'Selesai Sesi';
+                } else {
+                    nextBtn.textContent = 'Selanjutnya →';
+                }
+                markCardAsSeen(card.id); // Tetap dipanggil
+            }
+            function flipCard() {
+                flashcardEl.classList.toggle('is-flipped');
+            }
+            function nextCard() {
+                if (currentCardIndex < sessionCards.length - 1) {
+                    currentCardIndex++;
+                    displayCard();
+                } else {
+                    mainScreen.classList.add('hidden');
+                    endScreen.classList.remove('hidden');
+                    initFlashcardTab();
+                }
+            }
+            function prevCard() {
+                if (currentCardIndex > 0) {
+                    currentCardIndex--;
+                    displayCard();
+                }
+            }
+            function parseVocabEntry(htmlContent) {
+                const cards = [];
+                try {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = htmlContent;
+                    const paragraphs = tempDiv.querySelectorAll('p');
+                    let elementsToParse = [];
+                    if (paragraphs.length > 0) {
+                        elementsToParse = Array.from(paragraphs);
+                    } else if (tempDiv.textContent.trim().length > 0) {
+                        elementsToParse = [tempDiv];
+                    }
+                    elementsToParse.forEach(el => {
+                        const cleanText = (el.textContent || "").trim();
+                        if (cleanText.length === 0) return;
+                        const parts = cleanText.split(' - ').map(s => s.trim()).filter(s => s.length > 0);
+                        if (parts.length >= 3) {
+                            const cardId = parts[0];
+                            cards.push({ id: cardId, front: parts[0], back: `${parts[1]} - ${parts.slice(2).join(' - ')}` });
+                        } else if (parts.length === 2) {
+                            const cardId = parts[0];
+                            cards.push({ id: cardId, front: parts[0], back: parts[1] });
+                        } else {
+                            console.warn('Format vocab tidak valid, dilewati:', cleanText);
+                        }
+                    });
+                    return cards;
+                } catch (e) {
+                    console.error('Error parsing vocab:', htmlContent, e);
+                    return [];
+                }
+            }
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                fetchChapterInfo();
+                fetchVocab();
+                fetchGrammar();
+                fetchReading();
+                fetchListening();
+
+                startBtn.addEventListener('click', startFlashcardSession);
+                restartBtn.addEventListener('click', startFlashcardSession);
+                flashcardEl.addEventListener('click', flipCard);
+                nextBtn.addEventListener('click', nextCard);
+                prevBtn.addEventListener('click', prevCard);
+
+                // Dark Mode Toggle - Menggunakan Font Awesome Icons
+                const toggleBtn = document.getElementById('theme-toggle-btn');
+                const sunIcon = document.getElementById('theme-icon-sun');
+                const moonIcon = document.getElementById('theme-icon-moon');
+                const htmlEl = document.documentElement;
+
+                // Update ikon saat load
+                if (htmlEl.classList.contains('dark')) {
+                    sunIcon.classList.add('hidden');
+                    moonIcon.classList.remove('hidden');
+                } else {
+                    sunIcon.classList.remove('hidden');
+                    moonIcon.classList.add('hidden');
+                }
+
+                // Event listener untuk tombol toggle
+                toggleBtn.addEventListener('click', () => {
+                    const isDark = htmlEl.classList.contains('dark');
+                    const newTheme = isDark ? 'light' : 'dark';
+
+                    // Tentukan ikon yang akan masuk dan keluar
+                    const iconOut = isDark ? moonIcon : sunIcon;
+                    const iconIn = isDark ? sunIcon : moonIcon;
+
+                    // Animasi GSAP untuk ikon dengan rotasi smooth
+                    const tl = gsap.timeline();
+                    
+                    // Animasi keluar - rotate dan fade
+                    tl.to(iconOut, {
+                        duration: 0.3,
+                        opacity: 0,
+                        rotation: 180,
+                        scale: 0.5,
+                        ease: 'power2.in',
+                        onComplete: () => {
+                            iconOut.classList.add('hidden');
+                            iconIn.classList.remove('hidden');
+                            applyTheme(newTheme);
+                        }
+                    });
+                    
+                    // Animasi masuk - rotate dan fade
+                    tl.from(iconIn, {
+                        duration: 0.3,
+                        opacity: 0,
+                        rotation: -180,
+                        scale: 0.5,
+                        ease: 'power2.out'
+                    });
+                });
+            });
+        }
+    </script>
+
 </body>
+
 </html>

@@ -61,11 +61,34 @@
     const form = document.getElementById('add-chapter-form');
     const listContainer = document.getElementById('chapters-list');
     
-    // 3. Ambil elemen UI yang akan diubah
     const formTitle = document.getElementById('form-title');
     const submitButton = document.getElementById('submit-button');
     const cancelEditButton = document.getElementById('cancel-edit-button');
-    const editingIdInput = document.getElementById('editingId'); // Menggunakan hidden input
+    const editingIdInput = document.getElementById('editingId'); 
+
+    // === [BARU] Logika Caching ===
+    const CACHE_KEY = 'chaptersCache';
+
+    // Fungsi untuk mengambil data dari cache
+    function getCachedChapters() {
+      const cachedData = sessionStorage.getItem(CACHE_KEY);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+      return null;
+    }
+
+    // Fungsi untuk menyimpan data ke cache
+    function setCachedChapters(chapters) {
+      sessionStorage.setItem(CACHE_KEY, JSON.stringify(chapters));
+    }
+
+    // Fungsi untuk menghapus cache (Invalidasi)
+    function clearCache() {
+      sessionStorage.removeItem(CACHE_KEY);
+    }
+    // === Akhir Logika Caching ===
+
 
     const showToast = (message, icon = 'success') => {
       Swal.fire({
@@ -79,10 +102,25 @@
       });
     };
 
+    // === [MODIFIKASI] fetchChapters sekarang menggunakan cache ===
     async function fetchChapters() {
+      // 1. Coba ambil dari cache dulu
+      const cachedChapters = getCachedChapters();
+      if (cachedChapters) {
+        console.log('Data bab dimuat dari cache...');
+        renderChapters(cachedChapters);
+        return; // Hentikan eksekusi, tidak perlu fetch
+      }
+
+      // 2. Jika cache tidak ada, fetch ke server
       try {
+        console.log('Data bab di-fetch dari server...');
         const res = await fetch('/api/chapters');
         const chapters = await res.json();
+        
+        // 3. Simpan hasil fetch ke cache
+        setCachedChapters(chapters);
+        
         renderChapters(chapters);
       } catch (err) {
         listContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat bab.</p>';
@@ -97,7 +135,6 @@
       }
 
       chapters.forEach(bab => {
-        // Ganti ' (petik satu) dan " (petik dua) agar aman di data-attribute
         const safeDescription = bab.description ? bab.description.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
         const safeTitle = bab.title.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 
@@ -115,6 +152,14 @@
                 <a href="/panel-polakalimat?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
                   🧩 Pola
                 </a>
+                <a href="/panel-dokkai?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
+                  📖 Dokkai
+                </a>
+                
+                <a href="/panel-choukai?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
+                  🎧 Choukai
+                </a>
+                
                 <a href="/create-quiz?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
                   ❓ Kuis
                 </a>
@@ -133,16 +178,14 @@
       });
     }
 
-    // 4. Modifikasi Event Listener Submit untuk menangani CREATE dan UPDATE
+    // === [MODIFIKASI] Submit (Create/Update) sekarang menghapus cache ===
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const title = form.title.value;
       const description = form.description.value;
       const editingId = editingIdInput.value;
-      
       const isEditing = !!editingId;
-      
       const method = isEditing ? 'PUT' : 'POST';
       const url = isEditing ? `/api/chapters/${editingId}` : '/api/chapters';
 
@@ -152,15 +195,15 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ title, description })
         });
-        
         if (!res.ok) {
-           throw new Error(isEditing ? 'Gagal memperbarui bab' : 'Gagal menambah bab');
+            throw new Error(isEditing ? 'Gagal memperbarui bab' : 'Gagal menambah bab');
         }
         
+        clearCache(); // <-- [INVALIDASI CACHE]
+        
         resetForm();
-        fetchChapters();
+        fetchChapters(); // Akan fetch data baru karena cache kosong
         showToast(isEditing ? 'Bab berhasil diperbarui!' : 'Bab berhasil ditambahkan!');
-
       } catch (err) {
         showToast(err.message, 'error');
       }
@@ -169,23 +212,21 @@
     listContainer.addEventListener('click', (e) => {
       const target = e.target.closest('button');
       if (!target) return;
-      
       const id = target.dataset.id;
-
       if (target.classList.contains('delete-btn')) {
         deleteChapter(id);
       } else if (target.classList.contains('edit-btn')) {
-        // 5. Ambil data dari tombol dan panggil fungsi 'editChapter'
         const title = target.dataset.title;
         const description = target.dataset.description;
         editChapter(id, title, description);
       }
     });
 
+    // === [MODIFIKASI] Delete sekarang menghapus cache ===
     function deleteChapter(id) {
       Swal.fire({
         title: 'Anda yakin?',
-        text: "Bab ini dan SEMUA materi (kosakata, pola, kuis) di dalamnya akan dihapus!",
+        text: "Bab ini dan SEMUA materi (kosakata, pola, kuis, dokkai, choukai) di dalamnya akan dihapus!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -197,9 +238,12 @@
           try {
             const res = await fetch(`/api/chapters/${id}`, { method: 'DELETE' });
             if (!res.ok) throw new Error('Gagal menghapus');
-            fetchChapters();
+            
+            clearCache(); // <-- [INVALIDASI CACHE]
+            
+            fetchChapters(); // Akan fetch data baru karena cache kosong
             showToast('Bab berhasil dihapus.');
-            resetForm(); // Reset form jika bab yang sedang diedit dihapus
+            resetForm();
           } catch (err) {
             showToast(err.message, 'error');
           }
@@ -207,37 +251,28 @@
       });
     }
 
-    // 6. Buat fungsi 'editChapter' baru (tanpa SweetAlert form)
     function editChapter(id, title, description) {
-      // Isi form dengan data yang ada
       form.title.value = title;
       form.description.value = description;
-      editingIdInput.value = id; // Set ID yang sedang diedit
-
-      // Ubah tampilan UI form
+      editingIdInput.value = id; 
       formTitle.textContent = 'Edit Bab';
       submitButton.textContent = 'Simpan Perubahan';
-      cancelEditButton.classList.remove('hidden'); // Tampilkan tombol Batal
-
-      // Scroll ke atas agar form terlihat
+      cancelEditButton.classList.remove('hidden'); 
       window.scrollTo({ top: 0, behavior: 'smooth' });
       form.title.focus();
     }
 
-    // 7. Buat fungsi 'resetForm'
     function resetForm() {
       form.reset();
-      editingIdInput.value = ''; // Kosongkan ID
-      
-      // Kembalikan UI ke state "Tambah"
+      editingIdInput.value = ''; 
       formTitle.textContent = 'Tambah Bab Baru';
       submitButton.textContent = 'Tambah Bab';
-      cancelEditButton.classList.add('hidden'); // Sembunyikan tombol Batal
+      cancelEditButton.classList.add('hidden'); 
     }
     
-    // 8. Tambahkan event listener untuk tombol Batal
     cancelEditButton.addEventListener('click', resetForm);
 
+    // [TIDAK BERUBAH] Panggilan awal tetap sama
     document.addEventListener('DOMContentLoaded', fetchChapters);
   </script>
 </body>

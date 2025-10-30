@@ -41,7 +41,7 @@
     </style>
 </head>
 
-<body class="bg-stone-50 min-h-screen antialiased">
+<body class="bg-stone-100 min-h-screen antialiased">
 
     <header class="bg-white border-b border-stone-200">
         <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -67,32 +67,45 @@
         </div>
     </footer>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const container = document.getElementById('chapters-container');
-            const loadingPlaceholder = document.getElementById('loading-placeholder');
+   <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const container = document.getElementById('chapters-container');
+      const loadingPlaceholder = document.getElementById('loading-placeholder');
 
-            try {
-                // 1. Ambil data bab dari backend
-                const res = await fetch('/api/chapters');
-                if (!res.ok) {
-                    throw new Error('Gagal mengambil data dari server.');
-                }
+      // === [BARU] Logika Caching ===
+      // Cache ini khusus untuk data publik (daftar bab)
+      const CACHE_KEY = 'publicChaptersCache'; 
 
-                const chapters = await res.json();
+      function getCachedChapters() {
+        const cachedData = sessionStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          return JSON.parse(cachedData);
+        }
+        return null;
+      }
 
-                // Sembunyikan placeholder loading
-                loadingPlaceholder.classList.add('hidden');
+      function setCachedChapters(chapters) {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(chapters));
+      }
+      // === Akhir Logika Caching ===
 
-                if (chapters.length === 0) {
-                    container.innerHTML = '<p class="text-sm text-stone-600 col-span-full text-center py-8">Belum ada materi yang tersedia saat ini.</p>';
-                    return;
-                }
+      // Fungsi untuk me-render UI (dipisahkan agar bisa dipakai ulang)
+      function renderChapters(chapters) {
+        // Sembunyikan placeholder loading
+        loadingPlaceholder.classList.add('hidden');
 
-                // 2. Render setiap bab sebagai card
-                chapters.forEach(bab => {
-                    const card = `
-            <div class="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:border-stone-600 hover:shadow-ｍｄ group">
+        if (chapters.length === 0) {
+          container.innerHTML = '<p class="text-sm text-stone-600 col-span-full text-center py-8">Belum ada materi yang tersedia saat ini.</p>';
+          return;
+        }
+
+        // Kosongkan kontainer sebelum mengisi
+        container.innerHTML = ''; 
+        
+        // 2. Render setiap bab sebagai card
+        chapters.forEach(bab => {
+          const card = `
+            <div class="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:border-stone-600 hover:shadow-md group">
               <div class="p-6">
                 <h3 class="text-lg font-semibold text-stone-900 mb-2 tracking-tight group-hover:text-stone-700 transition-colors duration-200">${bab.title}</h3>
                 <p class="text-sm text-stone-600 mb-6 leading-relaxed min-h-[40px]">${bab.description || 'Klik untuk mulai belajar.'}</p>
@@ -105,15 +118,40 @@
               </div>
             </div>
           `;
-                    container.innerHTML += card;
-                });
-
-            } catch (err) {
-                console.error('Error fetching chapters:', err);
-                loadingPlaceholder.innerHTML = '<p class="text-sm text-red-600 col-span-full text-center py-8">Gagal memuat materi. Silakan coba lagi nanti.</p>';
-            }
+          container.innerHTML += card;
         });
-    </script>
+      }
+
+      try {
+        // 1. Coba ambil dari cache
+        const cachedChapters = getCachedChapters();
+        if (cachedChapters) {
+          console.log('Daftar bab dimuat dari cache...');
+          renderChapters(cachedChapters);
+          return; // Selesai, tidak perlu fetch
+        }
+
+        // 2. Jika cache kosong, fetch ke server
+        console.log('Daftar bab di-fetch dari server...');
+        const res = await fetch('/api/chapters');
+        if (!res.ok) {
+          throw new Error('Gagal mengambil data dari server.');
+        }
+
+        const chapters = await res.json();
+
+        // 3. Simpan ke cache untuk sesi ini
+        setCachedChapters(chapters);
+
+        // 4. Render data baru
+        renderChapters(chapters);
+
+      } catch (err) {
+        console.error('Error fetching chapters:', err);
+        loadingPlaceholder.innerHTML = '<p class="text-sm text-red-600 col-span-full text-center py-8">Gagal memuat materi. Silakan coba lagi nanti.</p>';
+      }
+    });
+  </script>
 </body>
 
 </html>
