@@ -58,6 +58,13 @@
             class="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200">
             Pola Kalimat
           </button>
+          <button 
+            class_default="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200" 
+            class_active="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900"
+            data-tab="quiz" 
+            class="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200">
+            Take Quiz
+          </button>
         </nav>
       </div>
     </div>
@@ -73,15 +80,15 @@
         <div id="grammar-content" class="space-y-8">
            <p class="text-sm text-stone-500">Memuat pola kalimat...</p>
         </div>
+      </div> <div id="quiz" class="tab-pane hidden">
+        <div id="quiz-stats" class="space-y-8">
+            <p class="text-sm text-stone-500">Jika kamu sudah memahami materi pada bab ini silahkan take quiz</p>
+            <a id="quiz-button" href="#" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+             Mulai quiz
+            </a>
+        </div>
       </div>
-    </div>
-
-    <div class="mt-12 pt-8 border-t border-stone-200">
-      <a id="quiz-button" href="#" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
-        Ambil Kuis Bab Ini
-      </a>
-    </div>
-  </main>
+    </div> </main>
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
@@ -89,8 +96,9 @@
     
     const vocabContainer = document.getElementById('vocab-content');
     const grammarContainer = document.getElementById('grammar-content');
+    const quizStats = document.getElementById('quiz-stats'); // Ini sudah benar
     const titleEl = document.getElementById('chapter-title');
-    const quizButton = document.getElementById('quiz-button');
+    const quizButton = document.getElementById('quiz-button'); // Ini sudah benar
 
     // Cek jika babId ada
     if (!babId) {
@@ -109,7 +117,8 @@
             btn.className = btn.getAttribute('class_default');
           });
 
-          document.getElementById(tabId).classList.remove('hidden');
+          // Ini sekarang akan bekerja dengan benar
+          document.getElementById(tabId).classList.remove('hidden'); 
           e.target.className = e.target.getAttribute('class_active');
         }
       });
