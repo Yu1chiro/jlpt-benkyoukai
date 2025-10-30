@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kuis JLPT</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet" />
+
+  <style>
+    .ql-container.ql-snow {
+      border: none; /* Hapus border default quill */
+    }
+    .ql-editor {
+      padding: 0; /* Hapus padding default quill */
+      font-size: 1rem; /* Samakan dengan text-base tailwind */
+      font-weight: 500; /* Samakan dengan font-medium tailwind */
+      color: #292524; /* Samakan dengan text-stone-900 */
+      line-height: 1.625; /* Samakan dengan leading-relaxed */
+    }
+    .ql-editor p {
+      margin-bottom: 0; /* Hapus margin default paragraf */
+    }
+  </style>
+
+</head>
+<body class="bg-stone-50 min-h-screen antialiased">
+  
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-10 backdrop-blur-sm bg-white/90">
+    <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center gap-4">
+      <a href="/" class="text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200 flex items-center gap-2 group">
+        <span class="transform group-hover:-translate-x-1 transition-transform duration-200">&larr;</span>
+        <span>クイズ</span>
+      </a>
+      <h2 id="chapter-title" class="text-sm font-medium text-stone-500 text-right truncate max-w-xs sm:max-w-md">Kuis</h2>
+    </nav>
+  </header>
+
+  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+    <div id="quiz-container" class="bg-white border border-stone-200 rounded-lg p-6 md:p-8 max-w-3xl mx-auto">
+      
+      <div id="loading" class="text-center py-8">
+        <p class="text-sm text-stone-500">Memuat kuis...</p>
+      </div>
+      
+      <form id="quiz-form" class="hidden">
+      </form>
+      
+      <div id="result-container" class="hidden text-center py-4">
+        <h2 class="text-2xl font-semibold text-stone-900 mb-6 tracking-tight">Hasil Kuis Anda</h2>
+        <p class="text-6xl font-bold mb-4 tracking-tight" id="score-text">0%</p>
+        <p class="text-sm text-stone-600 mb-8" id="score-details">Anda benar 0 dari 0 soal.</p>
+        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+          <button onclick="window.location.reload()" class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-stone-900 bg-white border border-stone-300 hover:bg-stone-50 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Coba Lagi
+          </button>
+          <a id="back-to-study" href="#" class="inline-flex items-center justify-center px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Kembali Belajar
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const babId = urlParams.get('babId');
+
+    const loadingEl = document.getElementById('loading');
+    const quizForm = document.getElementById('quiz-form');
+    const resultContainer = document.getElementById('result-container');
+    const scoreText = document.getElementById('score-text');
+    const scoreDetails = document.getElementById('score-details');
+    const backToStudy = document.getElementById('back-to-study');
+    
+    let questions = [];
+
+    if (!babId) {
+       loadingEl.innerHTML = '<p class="text-sm text-red-600 font-medium mb-2">Error: ID Bab tidak valid.</p><a href="/" class="text-sm text-stone-900 hover:text-stone-700 underline">Kembali ke Home</a>';
+    } else {
+      backToStudy.href = `/study?babId=${babId}`;
+
+      async function fetchQuiz() {
+        try {
+          const res = await fetch(`/api/quizzes/${babId}`);
+          if (!res.ok) throw new Error('Gagal mengambil data kuis.');
+          
+          questions = await res.json();
+          
+          if (questions.length === 0) {
+            loadingEl.textContent = 'Belum ada kuis untuk bab ini.';
+            loadingEl.classList.add('text-stone-500');
+            return;
+          }
+
+          renderQuiz();
+        } catch (err) {
+          console.error('Error fetching quiz:', err);
+          loadingEl.textContent = 'Gagal memuat kuis.';
+          loadingEl.classList.add('text-red-600');
+        }
+      }
+
+      // 3. Modifikasi fungsi renderQuiz
+      function renderQuiz() {
+        loadingEl.classList.add('hidden');
+        quizForm.classList.remove('hidden');
+        
+        let quizHTML = '';
+        questions.forEach((q, index) => {
+          quizHTML += `
+            <div class="mb-8 pb-8 border-b border-stone-100 last:border-b-0">
+              <div class="flex items-start mb-4">
+                <span class="text-base font-medium text-stone-900 mr-2 shrink-0">${index + 1}.</span>
+                <div class="ql-container ql-snow grow">
+                  <div class="ql-editor">${q.question}</div>
+                </div>
+              </div>
+              <div class="space-y-2 mt-5 pl-6">
+                ${renderOption(q.id, 'A', q.option_a)}
+                ${renderOption(q.id, 'B', q.option_b)}
+                ${renderOption(q.id, 'C', q.option_c)}
+                ${renderOption(q.id, 'D', q.option_d)}
+              </div>
+            </div>
+          `;
+        });
+
+        quizHTML += '<button type="submit" class="w-full bg-stone-900 hover:bg-stone-800 text-white font-medium py-3 px-6 rounded-lg text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">Submit Jawaban</button>';
+        quizForm.innerHTML = quizHTML;
+      }
+
+      function renderOption(questionId, optionLetter, optionText) {
+        return `
+          <div>
+            <label class="flex items-start p-4 rounded-lg border border-stone-200 hover:border-stone-300 hover:bg-stone-50 cursor-pointer transition-all duration-200 group">
+              <input type="radio" name="question_${questionId}" value="${optionLetter}" class="mt-0.5 mr-3 text-stone-900 focus:ring-stone-900 focus:ring-offset-0" required>
+              <span class="text-sm text-stone-700 group-hover:text-stone-900 transition-colors duration-200">${optionLetter}. ${optionText}</span>
+            </label>
+          </div>
+        `;
+      }
+
+      quizForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const userAnswers = [];
+        questions.forEach(q => {
+            const selected = quizForm.querySelector(`input[name="question_${q.id}"]:checked`);
+          userAnswers.push({
+            questionId: q.id,
+            answer: selected ? selected.value : null
+          });
+        });
+
+        try {
+          const res = await fetch(`/api/submit-quiz/${babId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ answers: userAnswers })
+          });
+          
+          if (!res.ok) throw new Error('Gagal mengirimkan jawaban.');
+          
+          const result = await res.json();
+          showResults(result);
+
+        } catch (err) {
+          console.error('Error submitting quiz:', err);
+          alert('Gagal mensubmit kuis. Silakan coba lagi.');
+        }
+      });
+
+      function showResults(result) {
+        quizForm.classList.add('hidden');
+        resultContainer.classList.remove('hidden');
+
+        const percentage = (result.score / result.total) * 100;
+        scoreText.textContent = `${percentage.toFixed(0)}%`;
+        scoreDetails.textContent = `Anda benar ${result.score} dari ${result.total} soal.`;
+
+        scoreText.classList.remove('text-green-600', 'text-amber-600', 'text-red-600');
+        if (percentage >= 80) {
+          scoreText.classList.add('text-green-600');
+        } else if (percentage >= 50) {
+          scoreText.classList.add('text-amber-600');
+        } else {
+          scoreText.classList.add('text-red-600');
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', fetchQuiz);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-stone-50 antialiased">
+  
+  <nav class="bg-white border-b border-stone-200 backdrop-blur-sm bg-white/90 sticky top-0 z-10">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+      <h1 class="text-lg font-semibold text-stone-900 tracking-tight">Admin Dashboard</h1>
+      <a href="/api/logout" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+        Logout
+      </a>
+    </div>
+  </nav>
+
+  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-5xl">
+    
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8 mb-8">
+      
+      <h2 id="form-title" class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Tambah Bab Baru</h2>
+      
+      <form id="add-chapter-form" class="space-y-5">
+        
+        <input type="hidden" id="editingId" value="">
+
+        <div>
+          <label for="title" class="block text-sm font-medium text-stone-700 mb-2">Judul Bab</label>
+          <input type="text" id="title" name="title" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="Masukkan judul bab" required>
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium text-stone-700 mb-2">Deskripsi Singkat</label>
+          <textarea id="description" name="description" rows="3" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400 resize-none" placeholder="Tambahkan deskripsi (opsional)"></textarea>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <button type="submit" id="submit-button" class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Tambah Bab
+          </button>
+          
+          <button type="button" id="cancel-edit-button" class="hidden inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Batal Edit
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8">
+      <h2 class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Kelola Materi</h2>
+      <div id="chapters-list" class="space-y-3">
+        <p class="text-sm text-stone-500">Memuat daftar bab...</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('add-chapter-form');
+    const listContainer = document.getElementById('chapters-list');
+    
+    // 3. Ambil elemen UI yang akan diubah
+    const formTitle = document.getElementById('form-title');
+    const submitButton = document.getElementById('submit-button');
+    const cancelEditButton = document.getElementById('cancel-edit-button');
+    const editingIdInput = document.getElementById('editingId'); // Menggunakan hidden input
+
+    const showToast = (message, icon = 'success') => {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: icon,
+        title: message,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    };
+
+    async function fetchChapters() {
+      try {
+        const res = await fetch('/api/chapters');
+        const chapters = await res.json();
+        renderChapters(chapters);
+      } catch (err) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat bab.</p>';
+      }
+    }
+
+    function renderChapters(chapters) {
+      listContainer.innerHTML = '';
+      if (chapters.length === 0) {
+        listContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada bab dibuat.</p>';
+        return;
+      }
+
+      chapters.forEach(bab => {
+        // Ganti ' (petik satu) dan " (petik dua) agar aman di data-attribute
+        const safeDescription = bab.description ? bab.description.replace(/"/g, '&quot;').replace(/'/g, '&#39;') : '';
+        const safeTitle = bab.title.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+        listContainer.innerHTML += `
+          <div class="border border-stone-200 rounded-lg p-4 sm:p-5 hover:border-stone-300 transition-colors duration-200">
+            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div class="flex-1 min-w-0">
+                <h3 class="text-base font-semibold text-stone-900 mb-1 tracking-tight">${bab.title}</h3>
+                <p class="text-sm text-stone-600 leading-relaxed">${bab.description || 'Tidak ada deskripsi'}</p>
+              </div>
+              <div class="flex flex-wrap gap-2">
+                <a href="/panel-kosakata?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
+                  ✏️ Kosakata
+                </a>
+                <a href="/panel-polakalimat?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
+                  🧩 Pola
+                </a>
+                <a href="/create-quiz?babId=${bab.id}&title=${encodeURIComponent(bab.title)}" class="inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-md transition-colors duration-200 whitespace-nowrap">
+                  ❓ Kuis
+                </a>
+                <button class="edit-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-md transition-colors duration-200 whitespace-nowrap"
+                  data-id="${bab.id}" data-title="${safeTitle}" data-description="${safeDescription}">
+                  Edit
+                </button>
+                <button class="delete-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200 whitespace-nowrap"
+                  data-id="${bab.id}">
+                  Hapus
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // 4. Modifikasi Event Listener Submit untuk menangani CREATE dan UPDATE
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const title = form.title.value;
+      const description = form.description.value;
+      const editingId = editingIdInput.value;
+      
+      const isEditing = !!editingId;
+      
+      const method = isEditing ? 'PUT' : 'POST';
+      const url = isEditing ? `/api/chapters/${editingId}` : '/api/chapters';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ title, description })
+        });
+        
+        if (!res.ok) {
+           throw new Error(isEditing ? 'Gagal memperbarui bab' : 'Gagal menambah bab');
+        }
+        
+        resetForm();
+        fetchChapters();
+        showToast(isEditing ? 'Bab berhasil diperbarui!' : 'Bab berhasil ditambahkan!');
+
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    listContainer.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+      
+      const id = target.dataset.id;
+
+      if (target.classList.contains('delete-btn')) {
+        deleteChapter(id);
+      } else if (target.classList.contains('edit-btn')) {
+        // 5. Ambil data dari tombol dan panggil fungsi 'editChapter'
+        const title = target.dataset.title;
+        const description = target.dataset.description;
+        editChapter(id, title, description);
+      }
+    });
+
+    function deleteChapter(id) {
+      Swal.fire({
+        title: 'Anda yakin?',
+        text: "Bab ini dan SEMUA materi (kosakata, pola, kuis) di dalamnya akan dihapus!",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Ya, hapus!',
+        cancelButtonText: 'Batal'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await fetch(`/api/chapters/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Gagal menghapus');
+            fetchChapters();
+            showToast('Bab berhasil dihapus.');
+            resetForm(); // Reset form jika bab yang sedang diedit dihapus
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    }
+
+    // 6. Buat fungsi 'editChapter' baru (tanpa SweetAlert form)
+    function editChapter(id, title, description) {
+      // Isi form dengan data yang ada
+      form.title.value = title;
+      form.description.value = description;
+      editingIdInput.value = id; // Set ID yang sedang diedit
+
+      // Ubah tampilan UI form
+      formTitle.textContent = 'Edit Bab';
+      submitButton.textContent = 'Simpan Perubahan';
+      cancelEditButton.classList.remove('hidden'); // Tampilkan tombol Batal
+
+      // Scroll ke atas agar form terlihat
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      form.title.focus();
+    }
+
+    // 7. Buat fungsi 'resetForm'
+    function resetForm() {
+      form.reset();
+      editingIdInput.value = ''; // Kosongkan ID
+      
+      // Kembalikan UI ke state "Tambah"
+      formTitle.textContent = 'Tambah Bab Baru';
+      submitButton.textContent = 'Tambah Bab';
+      cancelEditButton.classList.add('hidden'); // Sembunyikan tombol Batal
+    }
+    
+    // 8. Tambahkan event listener untuk tombol Batal
+    cancelEditButton.addEventListener('click', resetForm);
+
+    document.addEventListener('DOMContentLoaded', fetchChapters);
+  </script>
+</body>
+</html>

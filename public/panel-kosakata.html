@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Kosakata</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    .prose .ql-container {
+      border: none;
+    }
+    .prose .ql-editor {
+      padding: 0;
+    }
+    .prose .ql-editor p {
+      margin-top: 0;
+      margin-bottom: 1em;
+    }
+    .prose .ql-editor ul,
+    .prose .ql-editor ol {
+      margin-top: 1em;
+      margin-bottom: 1em;
+    }
+    .prose .ql-editor h1,
+    .prose .ql-editor h2,
+    .prose .ql-editor h3 {
+      margin-bottom: 0.5em;
+    }
+  </style>
+</head>
+<body class="bg-stone-50 antialiased min-h-screen">
+
+  <nav class="bg-white border-b border-stone-200 backdrop-blur-sm bg-white/90 sticky top-0 z-10">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-4">
+      <h1 id="panel-title" class="text-lg font-semibold text-stone-900 tracking-tight">Kelola Kosakata</h1>
+      <div class="flex items-center gap-3">
+        <a href="/dashboard" class="text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200">Kembali ke Dashboard</a>
+        <a href="/api/logout" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-5xl">
+    
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8 mb-8">
+      <h2 id="form-title" class="text-xl font-semibold text-stone-900 mb-2 tracking-tight">Editor Konten Kosakata</h2>
+      <p class="text-sm text-stone-600 mb-6 leading-relaxed">Masukkan semua kosakata, arti, dan contoh kalimat untuk bab ini di dalam editor di bawah.</p>
+      
+      <form id="add-vocab-form">
+        <input type="hidden" id="editingId" value="">
+
+        <div class="mb-6">
+          <div id="quill-editor" class="bg-white rounded-lg border border-stone-300 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-stone-200 [&_.ql-toolbar]:bg-stone-50/50 [&_.ql-toolbar]:rounded-t-lg [&_.ql-container]:border-none [&_.ql-container]:rounded-b-lg [&_.ql-editor]:min-h-[400px] [&_.ql-editor]:text-base [&_.ql-editor]:text-stone-900 [&_.ql-editor]:leading-relaxed"></div>
+        </div>
+        
+        <div class="flex items-center gap-3">
+          <button type="submit" id="submit-button" class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Simpan Konten Kosakata
+          </button>
+          <button type="button" id="cancel-edit-button" class="hidden inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Batal Edit
+          </button>
+        </div>
+      </form>
+    </div>
+    
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8">
+      <h2 class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Konten Kosakata Tersimpan</h2>
+      <div id="vocab-list" class="space-y-3">
+        <p class="text-sm text-stone-500">Memuat...</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const babId = urlParams.get('babId');
+    const babTitle = urlParams.get('title');
+
+    document.getElementById('panel-title').textContent = `Kelola Kosakata: ${babTitle || ''}`;
+    document.title = `Panel Kosakata - ${babTitle || ''}`;
+
+    const quillToolbarOptions = [
+      [{ 'header': [1, 2, 3, false] }], // Tetap ada sesuai permintaan sebelumnya
+      ['bold', 'italic', 'underline'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['clean']
+    ];
+
+    const quill = new Quill('#quill-editor', {
+      theme: 'snow',
+      modules: {
+        toolbar: quillToolbarOptions
+      }
+    });
+
+    const form = document.getElementById('add-vocab-form');
+    const listContainer = document.getElementById('vocab-list');
+    
+    // 4. Ambil Elemen UI Form
+    const formTitle = document.getElementById('form-title');
+    const submitButton = document.getElementById('submit-button');
+    const cancelEditButton = document.getElementById('cancel-edit-button');
+    const editingIdInput = document.getElementById('editingId');
+
+    const showToast = (message, icon = 'success') => {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: icon,
+        title: message,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    };
+
+    async function fetchVocab() {
+      if (!babId) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">ID Bab tidak ditemukan.</p>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/vocabularies/${babId}`);
+        const data = await res.json();
+        listContainer.innerHTML = '';
+        if (data.length === 0) {
+          listContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada konten kosakata.</p>';
+          return;
+        }
+        
+        data.forEach(v => {
+          listContainer.innerHTML += `
+            <div class="border border-stone-200 rounded-lg p-4 sm:p-5 hover:border-stone-300 transition-colors duration-200">
+              <div class="prose prose-stone prose-sm max-w-none [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:text-stone-700 [&_.ql-editor_h1]:text-2xl [&_.ql-editor_h1]:mb-2 [&_.ql-editor_h2]:text-xl [&_.ql-editor_h2]:mb-2 [&_.ql-editor_h3]:text-lg [&_.ql-editor_h3]:mb-2 [&_.ql-editor_ul]:ml-6 [&_.ql-editor_ul]:mb-4 [&_.ql-editor_ol]:ml-6 [&_.ql-editor_ol]:mb-4 [&_.ql-editor_p]:mb-4">
+                <div class="ql-container">
+                  <div class="ql-editor">${v.content || ''}</div>
+                </div>
+              </div>
+              <div class="mt-4 pt-4 border-t border-stone-100 flex justify-end gap-2">
+                <button class="edit-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-1" data-id="${v.id}">
+                  Edit
+                </button>
+                <button class="delete-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1" data-id="${v.id}">
+                  Hapus
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      } catch (err) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat data.</p>';
+      }
+    }
+
+    // 5. Modifikasi Event Listener Submit (Logic Upsert)
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const content = quill.root.innerHTML;
+      if (content === '<p><br></p>') {
+        showToast('Editor tidak boleh kosong!', 'warning');
+        return;
+      }
+
+      const editingId = editingIdInput.value;
+      const isEditing = !!editingId;
+
+      const url = isEditing ? `/api/vocabularies/${editingId}` : '/api/vocabularies';
+      const method = isEditing ? 'PUT' : 'POST';
+      // Body disesuaikan: PUT hanya butuh content, POST butuh bab_id dan content
+      const body = isEditing ? JSON.stringify({ content }) : JSON.stringify({ bab_id: babId, content });
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: body
+        });
+
+        if (!res.ok) {
+          throw new Error(isEditing ? 'Gagal memperbarui' : 'Gagal menyimpan');
+        }
+
+        resetForm(); // Panggil fungsi reset
+        fetchVocab();
+        showToast(isEditing ? 'Konten berhasil diperbarui.' : 'Konten berhasil disimpan.');
+      
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    listContainer.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+      
+      const id = target.dataset.id;
+      if (target.classList.contains('delete-btn')) {
+        deleteVocab(id);
+      } else if (target.classList.contains('edit-btn')) {
+        // 6. Panggil fungsi editVocab baru
+        editVocab(id);
+      }
+    });
+
+    function deleteVocab(id) {
+      Swal.fire({
+        title: 'Anda yakin?',
+        text: "Konten kosakata ini akan dihapus permanen.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        cancelButtonText: 'Batal',
+        confirmButtonText: 'Ya, hapus!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await fetch(`/api/vocabularies/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Gagal menghapus');
+            fetchVocab();
+            showToast('Konten berhasil dihapus.');
+            resetForm(); // Reset form jika item yg diedit dihapus
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    }
+
+    // 7. Ganti fungsi editVocab (tidak pakai Swal Form)
+    async function editVocab(id) {
+      try {
+        const res = await fetch(`/api/vocabulary/${id}`);
+        if (!res.ok) throw new Error('Gagal mengambil data');
+        const data = await res.json();
+        
+        // Isi form utama
+        quill.root.innerHTML = data.content;
+        editingIdInput.value = data.id;
+
+        // Ubah UI form
+        formTitle.textContent = 'Edit Konten Kosakata';
+        submitButton.textContent = 'Simpan Perubahan';
+        cancelEditButton.classList.remove('hidden');
+
+        // Scroll ke atas
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+    
+    // 8. Buat fungsi resetForm
+    function resetForm() {
+      form.reset();
+      quill.root.innerHTML = ''; // Kosongkan Quill secara manual
+      editingIdInput.value = '';
+
+      // Kembalikan UI ke state "Tambah"
+      formTitle.textContent = 'Editor Konten Kosakata';
+      submitButton.textContent = 'Simpan Konten Kosakata';
+      cancelEditButton.classList.add('hidden');
+    }
+
+    // 9. Tambahkan listener untuk tombol Batal
+    cancelEditButton.addEventListener('click', resetForm);
+
+    document.addEventListener('DOMContentLoaded', fetchVocab);
+  </script>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>勉強中</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet" />
+  <style>
+    /* Menghilangkan border dan padding default dari Quill */
+    .ql-container.ql-snow {
+      border: none;
+    }
+    .ql-editor {
+      padding: 0;
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #333;
+    }
+    .ql-editor h1 { font-size: 2em; margin-bottom: 0.5em; }
+    .ql-editor h2 { font-size: 1.5em; margin-bottom: 0.5em; }
+    .ql-editor h3 { font-size: 1.25em; margin-bottom: 0.5em; }
+    .ql-editor ul, .ql-editor ol { margin-left: 1.5em; margin-bottom: 1em; }
+    .ql-editor p { margin-bottom: 1em; }
+  </style>
+</head>
+<body class="bg-stone-50 min-h-screen antialiased">
+
+  <header class="bg-white border-b border-stone-200 sticky top-0 z-10 backdrop-blur-sm bg-white/90">
+    <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-5 flex justify-between items-center gap-4">
+      <a href="/" class="text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200 flex items-center gap-2 group">
+        <span class="transform group-hover:-translate-x-1 transition-transform duration-200">&larr;</span>
+        <span>Kembali ke Daftar</span>
+      </a>
+      <h2 id="chapter-title" class="text-sm font-medium text-stone-500 text-right truncate max-w-xs sm:max-w-md">
+        Memuat...
+      </h2>
+    </nav>
+  </header>
+
+  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-4xl">
+    
+    <div class="mb-8">
+      <div class="border-b border-stone-200" id="tab-nav">
+        <nav class="flex gap-1" aria-label="Tabs">
+          <button 
+            class_default="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200" 
+            class_active="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900" 
+            data-tab="kosakata" 
+            class="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900">
+            Kosakata
+          </button>
+          <button 
+            class_default="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200" 
+            class_active="px-4 py-3 text-sm font-medium text-stone-900 border-b-2 border-stone-900"
+            data-tab="polakalimat" 
+            class="px-4 py-3 text-sm font-medium text-stone-600 hover:text-stone-900 hover:border-stone-300 border-b-2 border-transparent transition-all duration-200">
+            Pola Kalimat
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <div id="tab-content">
+      <div id="kosakata" class="tab-pane active">
+        <div id="vocab-content" class="space-y-6">
+          <p class="text-sm text-stone-500">Memuat kosakata...</p>
+        </div>
+      </div>
+      
+      <div id="polakalimat" class="tab-pane hidden">
+        <div id="grammar-content" class="space-y-8">
+           <p class="text-sm text-stone-500">Memuat pola kalimat...</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-12 pt-8 border-t border-stone-200">
+      <a id="quiz-button" href="#" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+        Ambil Kuis Bab Ini
+      </a>
+    </div>
+  </main>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const babId = urlParams.get('babId');
+    
+    const vocabContainer = document.getElementById('vocab-content');
+    const grammarContainer = document.getElementById('grammar-content');
+    const titleEl = document.getElementById('chapter-title');
+    const quizButton = document.getElementById('quiz-button');
+
+    // Cek jika babId ada
+    if (!babId) {
+      document.body.innerHTML = '<div class="text-center p-10"><h1 class="text-2xl font-bold text-red-600">Error: ID Bab tidak ditemukan.</h1><a href="/" class="text-blue-500 hover:underline">Kembali ke Home</a></div>';
+    } else {
+      // Set link kuis
+      quizButton.href = `/quiz?babId=${babId}`;
+
+      // Logika Tab
+      document.getElementById('tab-nav').addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+          const tabId = e.target.dataset.tab;
+          
+          document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+          document.querySelectorAll('#tab-nav button').forEach(btn => {
+            btn.className = btn.getAttribute('class_default');
+          });
+
+          document.getElementById(tabId).classList.remove('hidden');
+          e.target.className = e.target.getAttribute('class_active');
+        }
+      });
+
+      // Fetch Judul Bab
+      async function fetchChapterInfo() {
+        try {
+          const res = await fetch('/api/chapters');
+          const chapters = await res.json();
+          const chapter = chapters.find(c => c.id == babId);
+          if (chapter) {
+            titleEl.textContent = chapter.title;
+            document.title = `Belajar - ${chapter.title}`;
+          } else {
+            titleEl.textContent = 'Bab Tidak Ditemukan';
+          }
+        } catch (err) {
+          console.error('Error fetching chapter info:', err);
+          titleEl.textContent = 'Error';
+        }
+      }
+
+      // Fetch Kosakata (Sesuai Revisi Terakhir)
+      async function fetchVocab() {
+        try {
+          const res = await fetch(`/api/vocabularies/${babId}`);
+          const data = await res.json();
+          vocabContainer.innerHTML = ''; // Kosongkan
+          
+          if (data.length === 0) {
+            vocabContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada kosakata untuk bab ini.</p>';
+            return;
+          }
+          
+          // Gabungkan semua entri konten menjadi satu
+          data.forEach(v => {
+            vocabContainer.innerHTML += `
+              <div class="py-6 border-b border-stone-100 last:border-b-0">
+                <div class="ql-container">
+                  <div class="ql-editor text-stone-700 leading-relaxed">${v.content || ''}</div>
+                </div>
+              </div>
+            `;
+          });
+        } catch (err) {
+          console.error('Error fetching vocab:', err);
+          vocabContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat kosakata.</p>';
+        }
+      }
+
+      // Fetch Pola Kalimat
+      async function fetchGrammar() {
+        try {
+          const res = await fetch(`/api/grammar/${babId}`);
+          const data = await res.json();
+          grammarContainer.innerHTML = ''; // Kosongkan
+          
+          if (data.length === 0) {
+            grammarContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada pola kalimat untuk bab ini.</p>';
+            return;
+          }
+          
+          data.forEach(g => {
+            grammarContainer.innerHTML += `
+              <div class="py-6 border-b border-stone-100 last:border-b-0">
+                <h3 class="text-xl font-semibold text-stone-900 mb-4 tracking-tight">${g.pattern}</h3>
+                <div class="space-y-4">
+                  <div>
+                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Penjelasan</h4>
+                    <div class="ql-container">
+                      <div class="ql-editor text-stone-700 leading-relaxed">${g.explanation || 'N/A'}</div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Contoh</h4>
+                    <div class="ql-container">
+                      <div class="ql-editor text-stone-700 leading-relaxed">${g.example || 'N/A'}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+        } catch (err) {
+          console.error('Error fetching grammar:', err);
+          grammarContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat pola kalimat.</p>';
+        }
+      }
+
+      // Panggil semua fungsi fetch saat halaman dimuat
+      document.addEventListener('DOMContentLoaded', () => {
+        fetchChapterInfo();
+        fetchVocab();
+        fetchGrammar();
+      });
+    }
+  </script>
+</body>
+</html>

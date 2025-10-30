@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勉強会 JLPT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+        integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1&display=swap" rel="stylesheet">
+    <style>
+        p {
+            font-family: "Shippori Mincho B1", serif !important;
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        h1 {
+            font-family: "Shippori Mincho B1", serif !important;
+        }
+
+        h2 {
+            font-family: "Shippori Mincho B1", serif !important;
+        }
+
+        span {
+            font-family: "Shippori Mincho B1", serif !important;
+        }
+
+        div {
+            font-family: "Shippori Mincho B1", serif !important;
+        }
+
+        h3 {
+            font-family: "Shippori Mincho B1", serif !important;
+        }
+    </style>
+</head>
+
+<body class="bg-stone-50 min-h-screen antialiased">
+
+    <header class="bg-white border-b border-stone-200">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+            <h1 class="text-2xl sm:text-3xl font-semibold text-stone-900 tracking-tight mb-2">能力試験・勉強会</h1>
+        </nav>
+    </header>
+
+    <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-6xl">
+        <h2 class="text-lg font-medium text-stone-900 mb-8">内容</h2>
+
+        <div id="chapters-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+
+            <div id="loading-placeholder" class="text-center p-8 text-sm text-stone-500 col-span-full">
+                Memuat materi...
+            </div>
+
+        </div>
+    </main>
+
+    <footer class="border-t border-stone-200 mt-16">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <p class="text-xs text-stone-500 text-center">&copy; 2025 JLPT </p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const container = document.getElementById('chapters-container');
+            const loadingPlaceholder = document.getElementById('loading-placeholder');
+
+            try {
+                // 1. Ambil data bab dari backend
+                const res = await fetch('/api/chapters');
+                if (!res.ok) {
+                    throw new Error('Gagal mengambil data dari server.');
+                }
+
+                const chapters = await res.json();
+
+                // Sembunyikan placeholder loading
+                loadingPlaceholder.classList.add('hidden');
+
+                if (chapters.length === 0) {
+                    container.innerHTML = '<p class="text-sm text-stone-600 col-span-full text-center py-8">Belum ada materi yang tersedia saat ini.</p>';
+                    return;
+                }
+
+                // 2. Render setiap bab sebagai card
+                chapters.forEach(bab => {
+                    const card = `
+            <div class="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:border-stone-600 hover:shadow-ｍｄ group">
+              <div class="p-6">
+                <h3 class="text-lg font-semibold text-stone-900 mb-2 tracking-tight group-hover:text-stone-700 transition-colors duration-200">${bab.title}</h3>
+                <p class="text-sm text-stone-600 mb-6 leading-relaxed min-h-[40px]">${bab.description || 'Klik untuk mulai belajar.'}</p>
+                <a href="/study?babId=${bab.id}" class="inline-flex items-center text-sm font-medium text-stone-900 hover:text-stone-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 rounded">
+                  Mulai Belajar
+                  <svg class="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                  </svg>
+                </a>
+              </div>
+            </div>
+          `;
+                    container.innerHTML += card;
+                });
+
+            } catch (err) {
+                console.error('Error fetching chapters:', err);
+                loadingPlaceholder.innerHTML = '<p class="text-sm text-red-600 col-span-full text-center py-8">Gagal memuat materi. Silakan coba lagi nanti.</p>';
+            }
+        });
+    </script>
+</body>
+
+</html>

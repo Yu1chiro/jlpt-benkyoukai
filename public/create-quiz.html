@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel Kuis</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <link href="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.snow.css" rel="stylesheet" />
+</head>
+<body class="bg-stone-50 antialiased min-h-screen">
+
+  <nav class="bg-white border-b border-stone-200 backdrop-blur-sm bg-white/90 sticky top-0 z-10">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-wrap justify-between items-center gap-4">
+      <h1 id="panel-title" class="text-lg font-semibold text-stone-900 tracking-tight">Kelola Kuis</h1>
+      <div class="flex items-center gap-3">
+        <a href="/dashboard" class="text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200">Kembali ke Dashboard</a>
+        <a href="/api/logout" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-5xl">
+    
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8 mb-8">
+      <h2 id="form-title" class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Tambah Soal Kuis Baru</h2>
+      <form id="add-quiz-form">
+        <input type="hidden" id="editingId" value="">
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-stone-700 mb-2">Pertanyaan</label>
+          <div id="quill-editor" class="bg-white rounded-lg border border-stone-300 [&_.ql-toolbar]:border-b [&_.ql-toolbar]:border-stone-200 [&_.ql-toolbar]:bg-stone-50/50 [&_.ql-toolbar]:rounded-t-lg [&_.ql-container]:border-none [&_.ql-container]:rounded-b-lg [&_.ql-editor]:min-h-[200px] [&_.ql-editor]:text-base [&_.ql-editor]:text-stone-900 [&_.ql-editor]:leading-relaxed [&_.ql-editor_p]:mb-0"></div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label for="option_a" class="block text-sm font-medium text-stone-700 mb-2">Pilihan A</label>
+            <input type="text" id="option_a" name="option_a" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="Masukkan pilihan A" required>
+          </div>
+          <div>
+            <label for="option_b" class="block text-sm font-medium text-stone-700 mb-2">Pilihan B</label>
+            <input type="text" id="option_b" name="option_b" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="Masukkan pilihan B" required>
+          </div>
+          <div>
+            <label for="option_c" class="block text-sm font-medium text-stone-700 mb-2">Pilihan C</label>
+            <input type="text" id="option_c" name="option_c" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="Masukkan pilihan C" required>
+          </div>
+          <div>
+            <label for="option_d" class="block text-sm font-medium text-stone-700 mb-2">Pilihan D</label>
+            <input type="text" id="option_d" name="option_d" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="Masukkan pilihan D" required>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-stone-700 mb-3">Jawaban Benar</label>
+          <div class="flex items-center gap-6 flex-wrap">
+            <label class="inline-flex items-center cursor-pointer group">
+              <input type="radio" name="correct_answer" value="A" class="w-4 h-4 text-stone-900 border-stone-300 focus:ring-2 focus:ring-stone-900 focus:ring-offset-0 cursor-pointer" required>
+              <span class="ml-2 text-sm text-stone-700 group-hover:text-stone-900">A</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer group">
+              <input type="radio" name="correct_answer" value="B" class="w-4 h-4 text-stone-900 border-stone-300 focus:ring-2 focus:ring-stone-900 focus:ring-offset-0 cursor-pointer">
+              <span class="ml-2 text-sm text-stone-700 group-hover:text-stone-900">B</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer group">
+              <input type="radio" name="correct_answer" value="C" class="w-4 h-4 text-stone-900 border-stone-300 focus:ring-2 focus:ring-stone-900 focus:ring-offset-0 cursor-pointer">
+              <span class="ml-2 text-sm text-stone-700 group-hover:text-stone-900">C</span>
+            </label>
+            <label class="inline-flex items-center cursor-pointer group">
+              <input type="radio" name="correct_answer" value="D" class="w-4 h-4 text-stone-900 border-stone-300 focus:ring-2 focus:ring-stone-900 focus:ring-offset-0 cursor-pointer">
+              <span class="ml-2 text-sm text-stone-700 group-hover:text-stone-900">D</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="flex items-center gap-3 pt-2">
+          <button type="submit" id="submit-button" class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+            Simpan Soal
+          </button>
+          <button type="button" id="cancel-edit-button" class="hidden inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-stone-700 bg-stone-100 hover:bg-stone-200 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-500 focus:ring-offset-2">
+            Batal Edit
+          </button>
+        </div>
+      </form>
+    </div>
+    
+    <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8">
+      <h2 class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Daftar Soal</h2>
+      <div id="quiz-list" class="space-y-4">
+        <p class="text-sm text-stone-500">Memuat...</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/quill@2.0.0/dist/quill.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const babId = urlParams.get('babId');
+    const babTitle = urlParams.get('title');
+
+    document.getElementById('panel-title').textContent = `Kelola Kuis: ${babTitle || ''}`;
+    document.title = `Panel Kuis - ${babTitle || ''}`;
+
+    const form = document.getElementById('add-quiz-form');
+    const listContainer = document.getElementById('quiz-list');
+    const formTitle = document.getElementById('form-title');
+    const submitButton = document.getElementById('submit-button');
+    const cancelEditButton = document.getElementById('cancel-edit-button');
+    const editingIdInput = document.getElementById('editingId');
+
+    // 5. Inisialisasi Quill Editor
+    const quillToolbarOptions = [
+      ['bold', 'italic', 'underline'],
+      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+      ['clean']
+    ];
+    
+    const quill = new Quill('#quill-editor', {
+      theme: 'snow',
+      modules: { 
+        toolbar: quillToolbarOptions
+      }
+    });
+
+    const showToast = (message, icon = 'success') => {
+      Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: icon,
+        title: message,
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+      });
+    };
+
+    const getOptionClass = (optionLetter, correctLetter) => {
+      return optionLetter === correctLetter 
+        ? 'font-semibold text-green-700' 
+        : 'text-stone-700';
+    };
+
+    async function fetchQuizzes() {
+      if (!babId) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">ID Bab tidak ditemukan.</p>';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/admin/quizzes/${babId}`); 
+        const data = await res.json();
+        listContainer.innerHTML = '';
+        if (data.length === 0) {
+          listContainer.innerHTML = '<p class="text-sm text-stone-500">Belum ada soal kuis.</p>';
+          return;
+        }
+        data.forEach((q, index) => {
+          // 6. Render pertanyaan sebagai HTML dari Quill
+          listContainer.innerHTML += `
+            <div class="border border-stone-200 rounded-lg p-5 hover:border-stone-300 transition-colors duration-200">
+              <div class="flex items-start gap-2 mb-4">
+                <span class="text-base font-semibold text-stone-900 flex-shrink-0">${index + 1}.</span>
+                <div class="flex-1 prose prose-stone prose-sm max-w-none [&_.ql-editor]:p-0 [&_.ql-editor]:text-base [&_.ql-editor]:leading-relaxed [&_.ql-editor]:text-stone-900 [&_.ql-editor_p]:mb-0">
+                  <div class="ql-container ql-snow border-none">
+                    <div class="ql-editor">${q.question}</div>
+                  </div>
+                </div>
+              </div>
+              <ul class="list-none space-y-2 text-sm mb-4 pl-6">
+                <li class="${getOptionClass('A', q.correct_answer)}">A. ${q.option_a}</li>
+                <li class="${getOptionClass('B', q.correct_answer)}">B. ${q.option_b}</li>
+                <li class="${getOptionClass('C', q.correct_answer)}">C. ${q.option_c}</li>
+                <li class="${getOptionClass('D', q.correct_answer)}">D. ${q.option_d}</li>
+              </ul>
+              <div class="pt-4 border-t border-stone-100 flex justify-end gap-2">
+                <button class="edit-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-1" data-id="${q.id}">
+                  Edit
+                </button>
+                <button class="delete-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-1" data-id="${q.id}">
+                  Hapus
+                </button>
+              </div>
+            </div>
+          `;
+        });
+      } catch (err) {
+        listContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat data.</p>';
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = new FormData(form);
+      // 7. Ambil data pertanyaan dari Quill
+      const questionContent = quill.root.innerHTML;
+
+      const data = {
+        bab_id: babId,
+        question: questionContent,
+        option_a: formData.get('option_a'),
+        option_b: formData.get('option_b'),
+        option_c: formData.get('option_c'),
+        option_d: formData.get('option_d'),
+        correct_answer: formData.get('correct_answer')
+      };
+      
+      if (questionContent === '<p><br></p>') {
+        showToast('Pertanyaan tidak boleh kosong!', 'warning');
+        return;
+      }
+
+      if (!data.correct_answer) {
+        showToast('Anda harus memilih jawaban yang benar.', 'warning');
+        return;
+      }
+
+      const editingId = editingIdInput.value;
+      const isEditing = !!editingId;
+      
+      const url = isEditing ? `/api/quizzes/${editingId}` : '/api/quizzes';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      try {
+        const res = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+        if (!res.ok) throw new Error(isEditing ? 'Gagal memperbarui' : 'Gagal menyimpan');
+        
+        resetForm();
+        fetchQuizzes();
+        showToast(isEditing ? 'Soal berhasil diperbarui.' : 'Soal berhasil disimpan.');
+      
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    });
+
+    listContainer.addEventListener('click', (e) => {
+      const target = e.target.closest('button');
+      if (!target) return;
+      const id = target.dataset.id;
+      if (target.classList.contains('delete-btn')) {
+        deleteQuiz(id);
+      } else if (target.classList.contains('edit-btn')) {
+        editQuiz(id);
+      }
+    });
+
+    function deleteQuiz(id) {
+      Swal.fire({
+        title: 'Anda yakin?',
+        text: "Soal ini akan dihapus permanen.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        cancelButtonText: 'Batal',
+        confirmButtonText: 'Ya, hapus!'
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          try {
+            const res = await fetch(`/api/quizzes/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('Gagal menghapus');
+            fetchQuizzes();
+            showToast('Soal berhasil dihapus.');
+          } catch (err) {
+            showToast(err.message, 'error');
+          }
+        }
+      });
+    }
+
+    async function editQuiz(id) {
+      try {
+        const res = await fetch(`/api/quiz/entry/${id}`);
+        if (!res.ok) throw new Error('Gagal mengambil data soal');
+        const q = await res.json();
+        
+        // 8. Isi data ke editor Quill, bukan textarea
+        quill.root.innerHTML = q.question;
+        
+        form.option_a.value = q.option_a;
+        form.option_b.value = q.option_b;
+        form.option_c.value = q.option_c;
+        form.option_d.value = q.option_d;
+        form.correct_answer.value = q.correct_answer;
+        editingIdInput.value = q.id;
+        
+        formTitle.textContent = 'Edit Soal Kuis';
+        submitButton.textContent = 'Simpan Perubahan';
+        cancelEditButton.classList.remove('hidden');
+        window.scrollTo(0, 0);
+        
+      } catch (err) {
+        showToast(err.message, 'error');
+      }
+    }
+    
+    function resetForm() {
+      form.reset();
+      // 9. Kosongkan editor Quill
+      quill.root.innerHTML = ''; 
+      
+      editingIdInput.value = '';
+      formTitle.textContent = 'Tambah Soal Kuis Baru';
+      submitButton.textContent = 'Simpan Soal';
+      cancelEditButton.classList.add('hidden');
+    }
+    
+    cancelEditButton.addEventListener('click', resetForm);
+
+    document.addEventListener('DOMContentLoaded', fetchQuizzes);
+  </script>
+</body>
+</html>
