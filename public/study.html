@@ -476,667 +476,608 @@
         </div>
     </main>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const babId = urlParams.get('babId');
+   <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const babId = urlParams.get('babId');
 
-        const vocabContainer = document.getElementById('vocab-content');
-        const grammarContainer = document.getElementById('grammar-content');
-        const readingContainer = document.getElementById('reading-content');
-        const listeningContainer = document.getElementById('listening-content');
-        const quizStats = document.getElementById('quiz-stats');
-        const titleEl = document.getElementById('chapter-title');
-        const quizButton = document.getElementById('quiz-button');
+    const vocabContainer = document.getElementById('vocab-content');
+    const grammarContainer = document.getElementById('grammar-content');
+    const readingContainer = document.getElementById('reading-content');
+    const listeningContainer = document.getElementById('listening-content');
+    const quizStats = document.getElementById('quiz-stats');
+    const titleEl = document.getElementById('chapter-title');
+    const quizButton = document.getElementById('quiz-button');
 
-        let allVocab = [];
-        let sessionCards = [];
-        let currentCardIndex = 0;
-        const SESSION_SIZE = 10;
+    let allVocab = [];
+    let sessionCards = [];
+    let currentCardIndex = 0;
+    const SESSION_SIZE = 10;
 
-        const flashcardTab = document.getElementById('flashcards');
-        const startScreen = document.getElementById('flashcard-start-screen');
-        const mainScreen = document.getElementById('flashcard-main-screen');
-        const endScreen = document.getElementById('flashcard-end-screen');
-        const loadingText = document.getElementById('flashcard-loading-text');
-        const emptyText = document.getElementById('flashcard-empty-text');
-        const startBtn = document.getElementById('start-session-btn');
-        const restartBtn = document.getElementById('restart-session-btn');
-        const flashcardEl = document.getElementById('flashcard');
-        const cardFrontEl = document.querySelector('#flashcard-front p');
-        const cardBackEl = document.querySelector('#flashcard-back p');
-        const progressText = document.getElementById('flashcard-progress');
-        const prevBtn = document.getElementById('prev-card-btn');
-        const nextBtn = document.getElementById('next-card-btn');
+    const flashcardTab = document.getElementById('flashcards');
+    const startScreen = document.getElementById('flashcard-start-screen');
+    const mainScreen = document.getElementById('flashcard-main-screen');
+    const endScreen = document.getElementById('flashcard-end-screen');
+    const loadingText = document.getElementById('flashcard-loading-text');
+    const emptyText = document.getElementById('flashcard-empty-text');
+    const startBtn = document.getElementById('start-session-btn');
+    const restartBtn = document.getElementById('restart-session-btn');
+    const flashcardEl = document.getElementById('flashcard');
+    const cardFrontEl = document.querySelector('#flashcard-front p');
+    const cardBackEl = document.querySelector('#flashcard-back p');
+    const progressText = document.getElementById('flashcard-progress');
+    const prevBtn = document.getElementById('prev-card-btn');
+    const nextBtn = document.getElementById('next-card-btn');
 
-        if (!babId) {
-            document.body.innerHTML = '<div class="text-center p-10"><h1 class="text-2xl font-bold text-red-600">Error: ID Bab tidak ditemukan.</h1><a href="/" class="text-blue-500 hover:underline">Kembali ke Home</a></div>';
-        } else {
+    if (!babId) {
+        document.body.innerHTML = '<div class="text-center p-10"><h1 class="text-2xl font-bold text-red-600">Error: ID Bab tidak ditemukan.</h1><a href="/" class="text-blue-500 hover:underline">Kembali ke Home</a></div>';
+    } else {
 
-            // FUNGSI CACHING MATERI (studyCache_...) DIHAPUS
-            // function getCacheKey(dataType) { ... }
-            // function getCachedData(dataType) { ... }
-            // function setCachedData(dataType, data) { ... }
+        quizButton.href = `/quiz?babId=${babId}`;
 
-            quizButton.href = `/quiz?babId=${babId}`;
-
-            document.getElementById('tab-nav').addEventListener('click', (e) => {
-                if (e.target.tagName === 'BUTTON') {
-                    const tabId = e.target.dataset.tab;
-                    document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
-                    document.querySelectorAll('#tab-nav button').forEach(btn => {
-                        btn.className = btn.getAttribute('class_default');
-                    });
-                    document.getElementById(tabId).classList.remove('hidden');
-                    e.target.className = e.target.getAttribute('class_active');
-                    e.target.classList.add('border-stone-900');
-                }
-            });
-
-            function renderChapterTitle(chapters) {
-                const chapter = chapters.find(c => c.id == babId);
-                if (chapter) {
-                    titleEl.textContent = chapter.title;
-                    document.title = `Belajar - ${chapter.title}`;
-                } else {
-                    titleEl.textContent = 'Bab Tidak Ditemukan';
-                }
+        document.getElementById('tab-nav').addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON') {
+                const tabId = e.target.dataset.tab;
+                document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.add('hidden'));
+                document.querySelectorAll('#tab-nav button').forEach(btn => {
+                    btn.className = btn.getAttribute('class_default');
+                });
+                document.getElementById(tabId).classList.remove('hidden');
+                e.target.className = e.target.getAttribute('class_active');
+                e.target.classList.add('border-stone-900');
             }
-            async function fetchChapterInfo() {
-                // const CACHE_KEY = 'studyCache_allChapters'; // Dihapus
-                // const cachedData = localStorage.getItem(CACHE_KEY); // Dihapus
+        });
 
-                // if (cachedData) { ... } // Blok cache dihapus
-
-                try {
-                    console.log('Judul bab di-fetch dari server...');
-                    const res = await fetch('/api/chapters');
-                    const chapters = await res.json();
-                    // localStorage.setItem(CACHE_KEY, JSON.stringify(chapters)); // Dihapus
-                    renderChapterTitle(chapters);
-                } catch (err) {
-                    console.error('Error fetching chapter info:', err);
-                    titleEl.textContent = 'Error';
-                }
+        function renderChapterTitle(chapters) {
+            const chapter = chapters.find(c => c.id == babId);
+            if (chapter) {
+                titleEl.textContent = chapter.title;
+                document.title = `Belajar - ${chapter.title}`;
+            } else {
+                titleEl.textContent = 'Bab Tidak Ditemukan';
             }
+        }
+        async function fetchChapterInfo() {
+            try {
+                console.log('Judul bab di-fetch dari server...');
+                const res = await fetch('/api/chapters');
+                const chapters = await res.json();
+                renderChapterTitle(chapters);
+            } catch (err) {
+                console.error('Error fetching chapter info:', err);
+                titleEl.textContent = 'Error';
+            }
+        }
 
-            function renderVocab(data) {
-                vocabContainer.innerHTML = '';
-                allVocab = [];
-                if (data.length === 0) {
-                    vocabContainer.innerHTML = '<p class="text-sm">Coming soon.</p>';
-                } else {
-                    data.forEach(v => {
-                        vocabContainer.innerHTML += `
+        function renderVocab(data) {
+            vocabContainer.innerHTML = '';
+            allVocab = [];
+            if (data.length === 0) {
+                vocabContainer.innerHTML = '<p class="text-sm">Coming soon.</p>';
+            } else {
+                data.forEach(v => {
+                    vocabContainer.innerHTML += `
                         <div class="py-6 border-b border-stone-100 last:border-b-0">
                             <div class="ql-container">
                                 <div class="ql-editor leading-relaxed">${v.content || ''}</div>
                             </div>
                         </div>
                         `;
-                        const parsedCards = parseVocabEntry(v.content);
-                        if (parsedCards.length > 0) {
-                            allVocab.push(...parsedCards);
-                        }
-                    });
-                }
-                initFlashcardTab();
-            }
-            async function fetchVocab() {
-                // const DATA_TYPE = 'vocab'; // Dihapus
-                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
-
-                // if (cachedData) { ... } // Blok cache dihapus
-
-                try {
-                    console.log('Kosakata di-fetch dari server...');
-                    const res = await fetch(`/api/vocabularies/${babId}`);
-                    const data = await res.json();
-                    // setCachedData(DATA_TYPE, data); // Dihapus
-                    renderVocab(data);
-                } catch (err) {
-                    console.error('Error fetching vocab:', err);
-                    vocabContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat kosakata.</p>';
-                    loadingText.textContent = 'Gagal memuat flashcards.';
-                    loadingText.classList.add('text-red-600');
-                }
-            }
-
-            function renderGrammar(data) {
-                grammarContainer.innerHTML = '';
-                if (data.length === 0) {
-                    grammarContainer.innerHTML = '<p class="text-sm">Belum ada pola kalimat untuk bab ini.</p>';
-                    return;
-                }
-                data.forEach(g => {
-                    grammarContainer.innerHTML += `
-                        <div class="py-6 border-b border-stone-100 last:border-b-0">
-                            <h3 class="text-xl font-semibold text-stone-900 mb-4 tracking-tight">${g.pattern}</h3>
-                            <div class="space-y-4">
-                                <div>
-                                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Penjelasan</h4>
-                                    <div class="ql-container">
-                                        <div class="ql-editor leading-relaxed">${g.explanation || 'N/A'}</div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Contoh</h4>
-                                    <div class="ql-container">
-                                        <div class="ql-editor leading-relaxed">${g.example || 'N/A'}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        `;
+                    const parsedCards = parseVocabEntry(v.content);
+                    if (parsedCards.length > 0) {
+                        allVocab.push(...parsedCards);
+                    }
                 });
             }
-            async function fetchGrammar() {
-                // const DATA_TYPE = 'grammar'; // Dihapus
-                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
-
-                // if (cachedData) { ... } // Blok cache dihapus
-
-                try {
-                    console.log('Pola kalimat di-fetch dari server...');
-                    const res = await fetch(`/api/grammar/${babId}`);
-                    const data = await res.json();
-                    // setCachedData(DATA_TYPE, data); // Dihapus
-                    renderGrammar(data);
-                } catch (err) {
-                    console.error('Error fetching grammar:', err);
-                    grammarContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat pola kalimat.</p>';
-                }
+            initFlashcardTab();
+        }
+        async function fetchVocab() {
+            try {
+                console.log('Kosakata di-fetch dari server...');
+                const res = await fetch(`/api/vocabularies/${babId}`);
+                const data = await res.json();
+                renderVocab(data);
+            } catch (err) {
+                console.error('Error fetching vocab:', err);
+                vocabContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat kosakata.</p>';
+                loadingText.textContent = 'Gagal memuat flashcards.';
+                loadingText.classList.add('text-red-600');
             }
+        }
 
-            function renderReading(exercises) {
-                // 'exercises' di sini adalah array of PASSAGES
-                readingContainer.innerHTML = '';
-                if (!exercises || exercises.length === 0) {
-                    readingContainer.innerHTML = '<p class="text-sm">Coming soon</p>';
-                    return;
-                }
-
-                let formHTML = '<form id="dokkai-form">';
-                
-                // 1. Loop untuk setiap Wacana (Passage)
-                exercises.forEach((passage, passageIndex) => {
-                    formHTML += `
-                        <div class="bg-white p-6 rounded-lg border border-stone-200 mb-8">
-                            <h3 class="text-lg font-semibold text-stone-900 mb-4">読解 ${passageIndex + 1}</h3>
-                            <div class="mb-6">
-                                <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Wacana</h4>
-                                <div class="ql-container rounded-lg">
-                                    <div class="ql-editor leading-relaxed">${passage.passage_content || ''}</div>
+        function renderGrammar(data) {
+            grammarContainer.innerHTML = '';
+            if (data.length === 0) {
+                grammarContainer.innerHTML = '<p class="text-sm">Belum ada pola kalimat untuk bab ini.</p>';
+                return;
+            }
+            data.forEach(g => {
+                grammarContainer.innerHTML += `
+                    <div class="py-6 border-b border-stone-100 last:border-b-0">
+                        <h3 class="text-xl font-semibold text-stone-900 mb-4 tracking-tight">${g.pattern}</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Penjelasan</h4>
+                                <div class="ql-container">
+                                    <div class="ql-editor leading-relaxed">${g.explanation || 'N/A'}</div>
                                 </div>
                             </div>
                             <div>
-                                <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-4">Pertanyaan</h4>
-                                <div class="space-y-6">
-                        `;
+                                <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Contoh</h4>
+                                <div class="ql-container">
+                                    <div class="ql-editor leading-relaxed">${g.example || 'N/A'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+            });
+        }
+        async function fetchGrammar() {
+            try {
+                console.log('Pola kalimat di-fetch dari server...');
+                const res = await fetch(`/api/grammar/${babId}`);
+                const data = await res.json();
+                renderGrammar(data);
+            } catch (err) {
+                console.error('Error fetching grammar:', err);
+                grammarContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat pola kalimat.</p>';
+            }
+        }
 
-                    // 2. Loop untuk setiap Pertanyaan (Question) di dalam wacana ini
-                    if (passage.questions && passage.questions.length > 0) {
-                        passage.questions.forEach((q, qIndex) => {
-                            formHTML += `
-                                    <div class="border-t border-stone-100 pt-6 first:border-t-0 first:pt-0">
-                                        <p class="text-base font-medium text-stone-800 mb-4">${qIndex + 1}. ${q.question_text || ''}</p>
-                                        <div class="space-y-3">
-                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
-                                                <input type="radio" name="dokkai_q_${q.id}" value="A" class="mr-3 text-stone-900 focus:ring-stone-900" required>
-                                                <span class="text-sm text-stone-700">A. ${q.option_a || ''}</span>
-                                            </label>
-                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
-                                                <input type="radio" name="dokkai_q_${q.id}" value="B" class="mr-3 text-stone-900 focus:ring-stone-900" required>
-                                                <span class="text-sm text-stone-700">B. ${q.option_b || ''}</span>
-                                            </label>
-                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
-                                                <input type="radio" name="dokkai_q_${q.id}" value="C" class="mr-3 text-stone-900 focus:ring-stone-900" required>
-                                                <span class="text-sm text-stone-700">C. ${q.option_c || ''}</span>
-                                            </label>
-                                            <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
-                                                <input type="radio" name="dokkai_q_${q.id}" value="D" class="mr-3 text-stone-900 focus:ring-stone-900" required>
-                                                <span class="text-sm text-stone-700">D. ${q.option_d || ''}</span>
-                                            </label>
-                                        </div>
+        function renderReading(exercises) {
+            readingContainer.innerHTML = '';
+            if (!exercises || exercises.length === 0) {
+                readingContainer.innerHTML = '<p class="text-sm">Coming soon</p>';
+                return;
+            }
+
+            let formHTML = '<form id="dokkai-form">';
+            
+            exercises.forEach((passage, passageIndex) => {
+                formHTML += `
+                    <div class="bg-white p-6 rounded-lg border border-stone-200 mb-8">
+                        <h3 class="text-lg font-semibold text-stone-900 mb-4">読解 ${passageIndex + 1}</h3>
+                        <div class="mb-6">
+                            <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Wacana</h4>
+                            <div class="ql-container rounded-lg">
+                                <div class="ql-editor leading-relaxed">${passage.passage_content || ''}</div>
+                            </div>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-4">Pertanyaan</h4>
+                            <div class="space-y-6">
+                            `;
+
+                if (passage.questions && passage.questions.length > 0) {
+                    passage.questions.forEach((q, qIndex) => {
+                        formHTML += `
+                                <div class="border-t border-stone-100 pt-6 first:border-t-0 first:pt-0">
+                                    <p class="text-base font-medium text-stone-800 mb-4">${qIndex + 1}. ${q.question_text || ''}</p>
+                                    <div class="space-y-3">
+                                        <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                            <input type="radio" name="dokkai_q_${q.id}" value="A" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                            <span class="text-sm text-stone-700">A. ${q.option_a || ''}</span>
+                                        </label>
+                                        <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                            <input type="radio" name="dokkai_q_${q.id}" value="B" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                            <span class="text-sm text-stone-700">B. ${q.option_b || ''}</span>
+                                        </label>
+                                        <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                            <input type="radio" name="dokkai_q_${q.id}" value="C" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                            <span class="text-sm text-stone-700">C. ${q.option_c || ''}</span>
+                                        </label>
+                                        <label class="flex items-center p-3 border border-stone-200 rounded-lg hover:bg-stone-50 transition-colors cursor-pointer">
+                                            <input type="radio" name="dokkai_q_${q.id}" value="D" class="mr-3 text-stone-900 focus:ring-stone-900" required>
+                                            <span class="text-sm text-stone-700">D. ${q.option_d || ''}</span>
+                                        </label>
                                     </div>
+                                </div>
                                 `;
-                        });
-                    } else {
-                         formHTML += '<p class="text-sm text-stone-500">Wacana ini belum memiliki pertanyaan.</p>';
-                    }
+                    });
+                } else {
+                     formHTML += '<p class="text-sm text-stone-500">Wacana ini belum memiliki pertanyaan.</p>';
+                }
 
-                    formHTML += `
+                formHTML += `
                                 </div>
                             </div>
                         </div>
                         `;
-                });
-                
-                // Hanya tampilkan tombol submit jika ada pertanyaan
-                if (exercises.some(ex => ex.questions && ex.questions.length > 0)) {
-                    formHTML += `
+            });
+            
+            if (exercises.some(ex => ex.questions && ex.questions.length > 0)) {
+                formHTML += `
                         <button type="submit" class="inline-flex items-center justify-center w-full px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
                             Kumpulkan Jawaban Dokkai
                         </button>
                         `;
-                }
-
-                formHTML += '</form>';
-
-                readingContainer.innerHTML = formHTML;
-
-                // Hanya tambahkan event listener jika form-nya ada
-                const dokkaiForm = document.getElementById('dokkai-form');
-                if (dokkaiForm) {
-                    dokkaiForm.addEventListener('submit', handleDokkaiSubmit);
-                }
-            }
-            async function fetchReading() {
-                // const DATA_TYPE = 'reading'; // Dihapus
-                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
-
-                // if (cachedData) { ... } // Blok cache dihapus
-
-                try {
-                    console.log('Dokkai di-fetch dari server...');
-                    const res = await fetch(`/api/reading/${babId}`);
-                    const exercises = await res.json();
-                    // setCachedData(DATA_TYPE, exercises); // Dihapus
-                    renderReading(exercises);
-                } catch (err) {
-                    console.error('Error fetching reading exercises:', err);
-                    readingContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat latihan membaca.</p>';
-                }
             }
 
-            async function handleDokkaiSubmit(e) {
-                e.preventDefault();
-                const form = e.target;
-                const formData = new FormData(form);
-                const answers = [];
+            formHTML += '</form>';
 
-                for (let [name, value] of formData.entries()) {
-                    // Mencari nama yang dimulai dengan 'dokkai_q_'
-                    if (name.startsWith('dokkai_q_')) {
-                        // Ambil ID dari bagian ke-3 (split by '_')
-                        const questionId = parseInt(name.split('_')[2]);
-                        answers.push({ questionId: questionId, answer: value });
-                    }
-                }
+            readingContainer.innerHTML = formHTML;
 
-                const submitButton = form.querySelector('button[type="submit"]');
-                submitButton.disabled = true;
-                submitButton.textContent = 'Memeriksa...';
+            const dokkaiForm = document.getElementById('dokkai-form');
+            if (dokkaiForm) {
+                dokkaiForm.addEventListener('submit', handleDokkaiSubmit);
+            }
+        }
+        async function fetchReading() {
+            try {
+                console.log('Dokkai di-fetch dari server...');
+                const res = await fetch(`/api/reading/${babId}`);
+                const exercises = await res.json();
+                renderReading(exercises);
+            } catch (err) {
+                console.error('Error fetching reading exercises:', err);
+                readingContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat latihan membaca.</p>';
+            }
+        }
 
-                try {
-                    const res = await fetch(`/api/submit-reading/${babId}`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ answers })
-                    });
-                    if (!res.ok) throw new Error('Gagal mengirim jawaban');
-                    const data = await res.json();
-                    renderDokkaiResults(data);
-                } catch (err) {
-                    console.error('Error submitting dokkai:', err);
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Error! Coba Lagi';
+        async function handleDokkaiSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const formData = new FormData(form);
+            const answers = [];
+
+            for (let [name, value] of formData.entries()) {
+                if (name.startsWith('dokkai_q_')) {
+                    const questionId = parseInt(name.split('_')[2]);
+                    answers.push({ questionId: questionId, answer: value });
                 }
             }
-            function renderDokkaiResults(data) {
-                const resultsDiv = document.getElementById('dokkai-results');
-                resultsDiv.innerHTML = `
-                <div class="bg-white p-6 rounded-lg border border-stone-200">
-                    <h3 class="text-xl font-semibold text-stone-900 mb-4">Hasil Latihan Membaca</h3>
-                    <p class="text-lg">Skor Anda: <span class="font-bold text-green-600">${data.score}</span> / ${data.total}</p>
-                </div>
-                `;
-                resultsDiv.classList.remove('hidden');
-                resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                data.results.forEach(result => {
-                    const questionId = result.questionId;
-                    // Mencari elemen berdasarkan nama 'dokkai_q_...'
-                    const radios = document.getElementsByName(`dokkai_q_${questionId}`);
-                    radios.forEach(radio => {
-                        radio.disabled = true;
-                        const label = radio.closest('label');
-                        label.classList.remove('hover:bg-stone-50', 'cursor-pointer');
-                        if (radio.value === result.correctAnswer) {
-                            label.classList.add('bg-green-100', 'border-green-300');
-                        }
-                        if (radio.checked && !result.isCorrect) {
-                            label.classList.add('bg-red-100', 'border-red-300');
-                        }
-                    });
+            const submitButton = form.querySelector('button[type="submit"]');
+            submitButton.disabled = true;
+            submitButton.textContent = 'Memeriksa...';
+
+            try {
+                const res = await fetch(`/api/submit-reading/${babId}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ answers })
                 });
-                document.getElementById('dokkai-form').querySelector('button[type="submit"]').classList.add('hidden');
+                if (!res.ok) throw new Error('Gagal mengirim jawaban');
+                const data = await res.json();
+                renderDokkaiResults(data);
+            } catch (err) {
+                console.error('Error submitting dokkai:', err);
+                submitButton.disabled = false;
+                submitButton.textContent = 'Error! Coba Lagi';
             }
-           // [GANTI FUNGSI INI]
-       function renderListening(exercises) {
-              listeningContainer.innerHTML = '';
-              if (exercises.length === 0) {
+        }
+        function renderDokkaiResults(data) {
+            const resultsDiv = document.getElementById('dokkai-results');
+            resultsDiv.innerHTML = `
+            <div class="bg-white p-6 rounded-lg border border-stone-200">
+                <h3 class="text-xl font-semibold text-stone-900 mb-4">Hasil Latihan Membaca</h3>
+                <p class="text-lg">Skor Anda: <span class="font-bold text-green-600">${data.score}</span> / ${data.total}</p>
+            </div>
+            `;
+            resultsDiv.classList.remove('hidden');
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            data.results.forEach(result => {
+                const questionId = result.questionId;
+                const radios = document.getElementsByName(`dokkai_q_${questionId}`);
+                radios.forEach(radio => {
+                    radio.disabled = true;
+                    const label = radio.closest('label');
+                    label.classList.remove('hover:bg-stone-50', 'cursor-pointer');
+                    if (radio.value === result.correctAnswer) {
+                        label.classList.add('bg-green-100', 'border-green-300');
+                    }
+                    if (radio.checked && !result.isCorrect) {
+                        label.classList.add('bg-red-100', 'border-red-300');
+                    }
+                });
+            });
+            document.getElementById('dokkai-form').querySelector('button[type="submit"]').classList.add('hidden');
+        }
+
+        function renderListening(exercises) {
+            listeningContainer.innerHTML = '';
+            if (exercises.length === 0) {
                 listeningContainer.innerHTML = '<p class="text-sm">Coming soon.</p>';
+                return;
+            }
 
-                  return;
-              }
+            exercises.forEach((ex, index) => {
+                const audio1Url = ex.audio_url_1 || '';
+                const audio2Url = ex.audio_url_2 || '';
+                const imageUrl = ex.image_url || '';
+                
+                const hasDescription = ex.description && ex.description.trim() !== '' && ex.description.trim() !== '<p><br></p>';
+                const hasScript = ex.script && ex.script.trim() !== '' && ex.script.trim() !== '<p><br></p>';
 
-              exercises.forEach((ex, index) => {
-                  const audio1Url = ex.audio_url_1 || '';
-                  const audio2Url = ex.audio_url_2 || '';
-                  const imageUrl = ex.image_url || '';
-                  
-                  // [BARU] Cek apakah ada deskripsi
-                  const hasDescription = ex.description && ex.description.trim() !== '' && ex.description.trim() !== '<p><br></p>';
-                  const hasScript = ex.script && ex.script.trim() !== '' && ex.script.trim() !== '<p><br></p>';
+                listeningContainer.innerHTML += `
+                    <div class="bg-white p-6 rounded-lg border border-stone-200 space-y-4">
+                        
+                        <h3 class="text-lg font-semibold text-stone-900">${ex.title || `Latihan Mendengar ${index + 1}`}</h3>
 
-                  listeningContainer.innerHTML += `
-                      <div class="bg-white p-6 rounded-lg border border-stone-200 space-y-4">
-                          
-                          <h3 class="text-lg font-semibold text-stone-900">${ex.title || `Latihan Mendengar ${index + 1}`}</h3>
+                        ${hasDescription ? `
+                        <div class="pb-4 border-b border-stone-100">
+                            <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Petunjuk</h4>
+                            <div class="ql-container">
+                                <div class="ql-editor">${ex.description}</div>
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        ${imageUrl ? `
+                        <div>
+                            <img src="${imageUrl}" alt="Gambar untuk ${ex.title || 'latihan'}" class="w-full max-h-80 object-contain rounded-lg bg-stone-100">
+                        </div>
+                        ` : ''}
 
-                          ${hasDescription ? `
-                          <div class="pb-4 border-b border-stone-100">
-                              <h4 class="text-xs font-medium text-stone-500 uppercase tracking-wide mb-2">Petunjuk</h4>
-                              <div class="ql-container">
-                                  <div class="ql-editor">${ex.description}</div>
-                              </div>
-                          </div>
-                          ` : ''}
-                          
-                          ${imageUrl ? `
-                          <div>
-                              <img src="${imageUrl}" alt="Gambar untuk ${ex.title || 'latihan'}" class="w-full max-h-80 object-contain rounded-lg bg-stone-100">
-                          </div>
-                          ` : ''}
-
-                          ${audio1Url ? `
-                          <div>
+                        ${audio1Url ? `
+                        <div>
                             <a href="${audio1Url}" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
                                 Audio 1
                                 </a>
-                             
-                          </div>
-                          ` : '<p class="text-sm text-red-500">Audio utama tidak ditemukan.</p>'}
+                           
+                        </div>
+                        ` : '<p class="text-sm text-red-500">Audio utama tidak ditemukan.</p>'}
 
-                          ${audio2Url ? `
-                          <div>
-                              <a href="${audio2Url}" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
+                        ${audio2Url ? `
+                        <div>
+                            <a href="${audio2Url}" class="inline-flex items-center justify-center w-full sm:w-auto px-6 py-3 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
                                 Audio 2
                                 </a>
-                          </div>
-                          ` : ''}
+                        </div>
+                        ` : ''}
 
-                          ${hasScript ? `
-                          <div class="pt-4 border-t border-stone-100">
-                              <button type="button" class="toggle-script-btn ..." ...>
-                                  ...
-                              </button>
-                              <div id="script-${ex.id}" class="choukai-script-container">
-                                  ...
-                              </div>
-                          </div>
-                          ` : ''}
-                      </div>
-                  `;
-              });
-              
-              setupListeningToggles();
-          }
-            async function fetchListening() {
-                // const DATA_TYPE = 'listening'; // Dihapus
-                // const cachedData = getCachedData(DATA_TYPE); // Dihapus
-
-                // if (cachedData) { ... } // Blok cache dihapus
-
-                try {
-                    console.log('Choukai di-fetch dari server...');
-                    const res = await fetch(`/api/listening/${babId}`);
-                    const exercises = await res.json();
-                    // setCachedData(DATA_TYPE, exercises); // Dihapus
-                    renderListening(exercises);
-                } catch (err) {
-                    console.error('Error fetching listening exercises:', err);
-                    listeningContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat latihan mendengar.</p>';
-                }
-            }
-
-            // [TAMBAH] Fungsi baru untuk menangani tombol show/hide script
-            function setupListeningToggles() {
-                // Gunakan event delegation pada container
-                listeningContainer.addEventListener('click', (e) => {
-                    const toggleBtn = e.target.closest('.toggle-script-btn');
-                    if (!toggleBtn) return; // Klik bukan pada tombol
-
-                    const targetId = toggleBtn.dataset.target;
-                    const scriptContainer = document.getElementById(targetId);
-                    const icon = toggleBtn.querySelector('i');
-                    const span = toggleBtn.querySelector('span');
-
-                    if (scriptContainer) {
-                        // Toggle class 'visible'
-                        const isVisible = scriptContainer.classList.toggle('visible');
-                        
-                        // Ubah ikon dan teks berdasarkan status 'visible'
-                        if (isVisible) {
-                            icon.classList.remove('fa-eye');
-                            icon.classList.add('fa-eye-slash');
-                            span.textContent = 'Sembunyikan Teks Jawaban';
-                        } else {
-                            icon.classList.remove('fa-eye-slash');
-                            icon.classList.add('fa-eye');
-                            span.textContent = 'Tampilkan Teks Jawaban';
-                        }
-                    }
-                });
-            }
-
-            // FUNGSI CACHE FLASHCARD (flashcard_progress_...) TETAP DIPERTAHANKAN
-            function getStorageKey() { return `flashcard_progress_${babId}`; }
-            function getSeenCards() {
-                const key = getStorageKey();
-                const seen = localStorage.getItem(key);
-                return seen ? new Set(JSON.parse(seen)) : new Set();
-            }
-            function markCardAsSeen(cardId) {
-                const key = getStorageKey();
-                let seenSet = getSeenCards();
-                seenSet.add(cardId);
-                localStorage.setItem(key, JSON.stringify(Array.from(seenSet)));
-            }
-            function initFlashcardTab() {
-                loadingText.classList.add('hidden');
-                if (allVocab.length > 0) {
-                    const seenCardIds = getSeenCards();
-                    const newCardCount = allVocab.filter(card => !seenCardIds.has(card.id)).length;
-                    startBtn.classList.remove('hidden');
-                    let sessionCount, btnText, restartText;
-                    if (newCardCount > 0) {
-                        sessionCount = Math.min(SESSION_SIZE, newCardCount);
-                        btnText = `Mulai Sesi (${sessionCount} Kartu Baru)`;
-                        restartText = `Lanjut Sesi (${sessionCount} Kartu Baru)`;
-                    } else {
-                        sessionCount = Math.min(SESSION_SIZE, allVocab.length);
-                        btnText = `Ulas Sesi (${sessionCount} Kartu)`;
-                        restartText = `Ulas Sesi Lagi (${sessionCount} Kartu)`;
-                    }
-                    startBtn.textContent = btnText;
-                    restartBtn.textContent = restartText;
-                    endScreen.querySelector('p').textContent = `Anda telah menyelesaikan latihan untuk ${sessionCards.length || sessionCount} kartu. Bagus!`;
-                } else {
-                    emptyText.classList.remove('hidden');
-                    if (vocabContainer.textContent.includes("Belum ada kosakata")) {
-                        emptyText.textContent = "Belum ada kosakata di bab ini untuk dijadikan flashcard.";
-                    }
-                }
-            }
+                        ${hasScript ? `
+                        <div class="pt-4 border-t border-stone-100">
+                            <button type="button" class="toggle-script-btn text-sm font-medium text-stone-600 hover:text-stone-900 transition-colors duration-200 flex items-center gap-2" data-target="script-${ex.id}">
+                                <i class="fa-solid fa-eye w-4"></i>
+                                <span>Tampilkan Teks Jawaban</span>
+                            </button>
+                            <div id="script-${ex.id}" class="choukai-script-container">
+                                <div class="ql-container">
+                                    <div class="ql-editor">${ex.script}</div>
+                                </div>
+                            </div>
+                        </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
             
-            function startFlashcardSession() {
-                currentCardIndex = 0;
-                const seenCardIds = getSeenCards();
-                const newCards = allVocab.filter(card => !seenCardIds.has(card.id));
-                const seenCards = allVocab.filter(card => seenCardIds.has(card.id));
-                sessionCards = [];
-                const shuffledNew = shuffleArray([...newCards]);
-                sessionCards = shuffledNew.slice(0, Math.min(SESSION_SIZE, shuffledNew.length));
-                const remainingSlots = SESSION_SIZE - sessionCards.length;
-                if (remainingSlots > 0 && seenCards.length > 0) {
-                    const shuffledSeen = shuffleArray([...seenCards]);
-                    sessionCards.push(...shuffledSeen.slice(0, Math.min(remainingSlots, shuffledSeen.length)));
-                }
-                if (sessionCards.length === 0 && allVocab.length > 0) {
-                    const shuffledSeen = shuffleArray([...seenCards]);
-                    sessionCards = shuffledSeen.slice(0, Math.min(SESSION_SIZE, allVocab.length));
-                }
-                startScreen.classList.add('hidden');
-                endScreen.classList.add('hidden');
-                mainScreen.classList.remove('hidden');
-                if (sessionCards.length > 0) {
-                    displayCard();
-                } else {
-                    mainScreen.classList.add('hidden');
-                    startScreen.classList.remove('hidden');
-                    initFlashcardTab();
-                }
+            setupListeningToggles();
+        }
+        async function fetchListening() {
+            try {
+                console.log('Choukai di-fetch dari server...');
+                const res = await fetch(`/api/listening/${babId}`);
+                const exercises = await res.json();
+                renderListening(exercises);
+            } catch (err) {
+                console.error('Error fetching listening exercises:', err);
+                listeningContainer.innerHTML = '<p class="text-sm text-red-600">Gagal memuat latihan mendengar.</p>';
             }
-            function displayCard() {
-                const card = sessionCards[currentCardIndex];
-                flashcardEl.classList.remove('is-flipped');
-                cardFrontEl.textContent = card.front;
-                cardBackEl.textContent = card.back;
-                progressText.textContent = `Kartu ${currentCardIndex + 1} / ${sessionCards.length}`;
-                prevBtn.disabled = (currentCardIndex === 0);
-                if (currentCardIndex === sessionCards.length - 1) {
-                    nextBtn.textContent = 'Selesai Sesi';
-                } else {
-                    nextBtn.textContent = 'Selanjutnya →';
-                }
-                markCardAsSeen(card.id); // Tetap dipanggil
-            }
-            function flipCard() {
-                flashcardEl.classList.toggle('is-flipped');
-            }
-            function nextCard() {
-                if (currentCardIndex < sessionCards.length - 1) {
-                    currentCardIndex++;
-                    displayCard();
-                } else {
-                    mainScreen.classList.add('hidden');
-                    endScreen.classList.remove('hidden');
-                    initFlashcardTab();
-                }
-            }
-            function prevCard() {
-                if (currentCardIndex > 0) {
-                    currentCardIndex--;
-                    displayCard();
-                }
-            }
-            function parseVocabEntry(htmlContent) {
-                const cards = [];
-                try {
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = htmlContent;
-                    const paragraphs = tempDiv.querySelectorAll('p');
-                    let elementsToParse = [];
-                    if (paragraphs.length > 0) {
-                        elementsToParse = Array.from(paragraphs);
-                    } else if (tempDiv.textContent.trim().length > 0) {
-                        elementsToParse = [tempDiv];
+        }
+
+        function setupListeningToggles() {
+            listeningContainer.addEventListener('click', (e) => {
+                const toggleBtn = e.target.closest('.toggle-script-btn');
+                if (!toggleBtn) return;
+
+                const targetId = toggleBtn.dataset.target;
+                const scriptContainer = document.getElementById(targetId);
+                const icon = toggleBtn.querySelector('i');
+                const span = toggleBtn.querySelector('span');
+
+                if (scriptContainer) {
+                    const isVisible = scriptContainer.classList.toggle('visible');
+                    
+                    if (isVisible) {
+                        icon.classList.remove('fa-eye');
+                        icon.classList.add('fa-eye-slash');
+                        span.textContent = 'Sembunyikan Teks Jawaban';
+                    } else {
+                        icon.classList.remove('fa-eye-slash');
+                        icon.classList.add('fa-eye');
+                        span.textContent = 'Tampilkan Teks Jawaban';
                     }
-                    elementsToParse.forEach(el => {
-                        const cleanText = (el.textContent || "").trim();
-                        if (cleanText.length === 0) return;
-                        const parts = cleanText.split(' - ').map(s => s.trim()).filter(s => s.length > 0);
-                        if (parts.length >= 3) {
-                            const cardId = parts[0];
-                            cards.push({ id: cardId, front: parts[0], back: `${parts[1]} - ${parts.slice(2).join(' - ')}` });
-                        } else if (parts.length === 2) {
-                            const cardId = parts[0];
-                            cards.push({ id: cardId, front: parts[0], back: parts[1] });
-                        } else {
-                            console.warn('Format vocab tidak valid, dilewati:', cleanText);
-                        }
-                    });
-                    return cards;
-                } catch (e) {
-                    console.error('Error parsing vocab:', htmlContent, e);
-                    return [];
                 }
-            }
-            function shuffleArray(array) {
-                for (let i = array.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [array[i], array[j]] = [array[j], array[i]];
-                }
-                return array;
-            }
-
-            document.addEventListener('DOMContentLoaded', () => {
-                fetchChapterInfo();
-                fetchVocab();
-                fetchGrammar();
-                fetchReading();
-                fetchListening();
-
-                startBtn.addEventListener('click', startFlashcardSession);
-                restartBtn.addEventListener('click', startFlashcardSession);
-                flashcardEl.addEventListener('click', flipCard);
-                nextBtn.addEventListener('click', nextCard);
-                prevBtn.addEventListener('click', prevCard);
-
-                // Dark Mode Toggle - Menggunakan Font Awesome Icons
-                const toggleBtn = document.getElementById('theme-toggle-btn');
-                const sunIcon = document.getElementById('theme-icon-sun');
-                const moonIcon = document.getElementById('theme-icon-moon');
-                const htmlEl = document.documentElement;
-
-                // Update ikon saat load
-                if (htmlEl.classList.contains('dark')) {
-                    sunIcon.classList.add('hidden');
-                    moonIcon.classList.remove('hidden');
-                } else {
-                    sunIcon.classList.remove('hidden');
-                    moonIcon.classList.add('hidden');
-                }
-
-                // Event listener untuk tombol toggle
-                toggleBtn.addEventListener('click', () => {
-                    const isDark = htmlEl.classList.contains('dark');
-                    const newTheme = isDark ? 'light' : 'dark';
-
-                    // Tentukan ikon yang akan masuk dan keluar
-                    const iconOut = isDark ? moonIcon : sunIcon;
-                    const iconIn = isDark ? sunIcon : moonIcon;
-
-                    // Animasi GSAP untuk ikon dengan rotasi smooth
-                    const tl = gsap.timeline();
-                    
-                    // Animasi keluar - rotate dan fade
-                    tl.to(iconOut, {
-                        duration: 0.3,
-                        opacity: 0,
-                        rotation: 180,
-                        scale: 0.5,
-                        ease: 'power2.in',
-                        onComplete: () => {
-                            iconOut.classList.add('hidden');
-                            iconIn.classList.remove('hidden');
-                            applyTheme(newTheme);
-                        }
-                    });
-                    
-                    // Animasi masuk - rotate dan fade
-                    tl.from(iconIn, {
-                        duration: 0.3,
-                        opacity: 0,
-                        rotation: -180,
-                        scale: 0.5,
-                        ease: 'power2.out'
-                    });
-                });
             });
         }
-    </script>
+
+        function getStorageKey() { return `flashcard_progress_${babId}`; }
+        function getSeenCards() {
+            const key = getStorageKey();
+            const seen = localStorage.getItem(key);
+            return seen ? new Set(JSON.parse(seen)) : new Set();
+        }
+        function markCardAsSeen(cardId) {
+            const key = getStorageKey();
+            let seenSet = getSeenCards();
+            seenSet.add(cardId);
+            localStorage.setItem(key, JSON.stringify(Array.from(seenSet)));
+        }
+        function initFlashcardTab() {
+            loadingText.classList.add('hidden');
+            if (allVocab.length > 0) {
+                const seenCardIds = getSeenCards();
+                const newCardCount = allVocab.filter(card => !seenCardIds.has(card.id)).length;
+                startBtn.classList.remove('hidden');
+                let sessionCount, btnText, restartText;
+                if (newCardCount > 0) {
+                    sessionCount = Math.min(SESSION_SIZE, newCardCount);
+                    btnText = `Mulai Sesi (${sessionCount} Kartu Baru)`;
+                    restartText = `Lanjut Sesi (${sessionCount} Kartu Baru)`;
+                } else {
+                    sessionCount = Math.min(SESSION_SIZE, allVocab.length);
+                    btnText = `Ulas Sesi (${sessionCount} Kartu)`;
+                    restartText = `Ulas Sesi Lagi (${sessionCount} Kartu)`;
+                }
+                startBtn.textContent = btnText;
+                restartBtn.textContent = restartText;
+                endScreen.querySelector('p').textContent = `Anda telah menyelesaikan latihan untuk ${sessionCards.length || sessionCount} kartu. Bagus!`;
+            } else {
+                emptyText.classList.remove('hidden');
+                if (vocabContainer.textContent.includes("Belum ada kosakata")) {
+                    emptyText.textContent = "Belum ada kosakata di bab ini untuk dijadikan flashcard.";
+                }
+            }
+        }
+        
+        function startFlashcardSession() {
+            currentCardIndex = 0;
+            const seenCardIds = getSeenCards();
+            
+            const newCards = allVocab.filter(card => !seenCardIds.has(card.id));
+            const seenCards = allVocab.filter(card => seenCardIds.has(card.id));
+            sessionCards = [];
+            
+            sessionCards = newCards.slice(0, Math.min(SESSION_SIZE, newCards.length));
+            
+            const remainingSlots = SESSION_SIZE - sessionCards.length;
+            if (remainingSlots > 0 && seenCards.length > 0) {
+                sessionCards.push(...seenCards.slice(0, Math.min(remainingSlots, seenCards.length)));
+            }
+
+            if (sessionCards.length === 0 && allVocab.length > 0) {
+                sessionCards = seenCards.slice(0, Math.min(SESSION_SIZE, allVocab.length));
+            }
+            
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+            mainScreen.classList.remove('hidden');
+            if (sessionCards.length > 0) {
+                displayCard();
+            } else {
+                mainScreen.classList.add('hidden');
+                startScreen.classList.remove('hidden');
+                initFlashcardTab();
+            }
+        }
+        function displayCard() {
+            const card = sessionCards[currentCardIndex];
+            flashcardEl.classList.remove('is-flipped');
+            cardFrontEl.textContent = card.front;
+            cardBackEl.textContent = card.back;
+            progressText.textContent = `Kartu ${currentCardIndex + 1} / ${sessionCards.length}`;
+            prevBtn.disabled = (currentCardIndex === 0);
+            if (currentCardIndex === sessionCards.length - 1) {
+                nextBtn.textContent = 'Selesai Sesi';
+            } else {
+                nextBtn.textContent = 'Selanjutnya →';
+            }
+            markCardAsSeen(card.id);
+        }
+        function flipCard() {
+            flashcardEl.classList.toggle('is-flipped');
+        }
+        function nextCard() {
+            if (currentCardIndex < sessionCards.length - 1) {
+                currentCardIndex++;
+                displayCard();
+            } else {
+                mainScreen.classList.add('hidden');
+                endScreen.classList.remove('hidden');
+                initFlashcardTab();
+            }
+        }
+        function prevCard() {
+            if (currentCardIndex > 0) {
+                currentCardIndex--;
+                displayCard();
+            }
+        }
+        function parseVocabEntry(htmlContent) {
+            const cards = [];
+            try {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = htmlContent;
+                const paragraphs = tempDiv.querySelectorAll('p');
+                let elementsToParse = [];
+                if (paragraphs.length > 0) {
+                    elementsToParse = Array.from(paragraphs);
+                } else if (tempDiv.textContent.trim().length > 0) {
+                    elementsToParse = [tempDiv];
+                }
+                elementsToParse.forEach(el => {
+                    const cleanText = (el.textContent || "").trim();
+                    if (cleanText.length === 0) return;
+                    const parts = cleanText.split(' - ').map(s => s.trim()).filter(s => s.length > 0);
+                    if (parts.length >= 3) {
+                        const cardId = parts[0];
+                        cards.push({ id: cardId, front: parts[0], back: `${parts[1]} - ${parts.slice(2).join(' - ')}` });
+                    } else if (parts.length === 2) {
+                        const cardId = parts[0];
+                        cards.push({ id: cardId, front: parts[0], back: parts[1] });
+                    } else {
+                        console.warn('Format vocab tidak valid, dilewati:', cleanText);
+                    }
+                });
+                return cards;
+            } catch (e) {
+                console.error('Error parsing vocab:', htmlContent, e);
+                return [];
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchChapterInfo();
+            fetchVocab();
+            fetchGrammar();
+            fetchReading();
+            fetchListening();
+
+            startBtn.addEventListener('click', startFlashcardSession);
+            restartBtn.addEventListener('click', startFlashcardSession);
+            flashcardEl.addEventListener('click', flipCard);
+            nextBtn.addEventListener('click', nextCard);
+            prevBtn.addEventListener('click', prevCard);
+
+            const toggleBtn = document.getElementById('theme-toggle-btn');
+            const sunIcon = document.getElementById('theme-icon-sun');
+            const moonIcon = document.getElementById('theme-icon-moon');
+            const htmlEl = document.documentElement;
+
+            if (htmlEl.classList.contains('dark')) {
+                sunIcon.classList.add('hidden');
+                moonIcon.classList.remove('hidden');
+            } else {
+                sunIcon.classList.remove('hidden');
+                moonIcon.classList.add('hidden');
+            }
+
+            toggleBtn.addEventListener('click', () => {
+                const isDark = htmlEl.classList.contains('dark');
+                const newTheme = isDark ? 'light' : 'dark';
+
+                const iconOut = isDark ? moonIcon : sunIcon;
+                const iconIn = isDark ? sunIcon : moonIcon;
+
+                const tl = gsap.timeline();
+                
+                tl.to(iconOut, {
+                    duration: 0.3,
+                    opacity: 0,
+                    rotation: 180,
+                    scale: 0.5,
+                    ease: 'power2.in',
+                    onComplete: () => {
+                        iconOut.classList.add('hidden');
+                        iconIn.classList.remove('hidden');
+                        applyTheme(newTheme);
+                    }
+                });
+                
+                tl.from(iconIn, {
+                    duration: 0.3,
+                    opacity: 0,
+                    rotation: -180,
+                    scale: 0.5,
+                    ease: 'power2.out'
+                });
+            });
+        });
+    }
+</script>
 
 </body>
 
