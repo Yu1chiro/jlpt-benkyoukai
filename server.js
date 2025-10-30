@@ -44,28 +44,37 @@ const pool = new Pool({
       )
     `);
 
-    // Tabel listening (dengan kolom script)
-    await client.query(`
+    // [DIUBAH] Tabel listening (dengan kolom baru)
+   await client.query(`
       CREATE TABLE IF NOT EXISTS listening_exercises (
         id SERIAL PRIMARY KEY,
         bab_id INTEGER REFERENCES chapters(id) ON DELETE CASCADE,
         title TEXT,
-        audio_url TEXT,
+        description TEXT,   -- BARU
+        image_url TEXT,
+        audio_url_1 TEXT,
+        audio_url_2 TEXT,
         script TEXT 
       )
     `);
 
+    // [DIUBAH] Blok ALTER untuk memastikan semua kolom ada
     try {
-      await client.query(`
-        ALTER TABLE listening_exercises 
-        ADD COLUMN IF NOT EXISTS script TEXT;
-      `);
-      console.log("Kolom 'script' di listening_exercises berhasil divalidasi/ditambahkan.");
+      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS description TEXT;`);
+      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS image_url TEXT;`);
+      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS audio_url_1 TEXT;`);
+      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS audio_url_2 TEXT;`);
+      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS script TEXT;`);
+      
+      // (Opsional) Hapus kolom 'audio_url' lama jika Anda yakin sudah tidak terpakai
+      await client.query(`ALTER TABLE listening_exercises DROP COLUMN IF EXISTS audio_url;`); 
+
+      console.log("Kolom 'listening_exercises' (image_url, audio_url_1, audio_url_2, script) berhasil divalidasi/ditambahkan.");
     } catch (alterErr) {
-      console.error("Gagal menambahkan kolom 'script':", alterErr.message);
-      // Jangan hentikan proses jika error (mungkin karena masalah izin)
+      console.error("Gagal memvalidasi kolom 'listening_exercises':", alterErr.message);
+      // Jangan hentikan proses jika error
     }
-    // [AKHIR TAMBAHAN]
+    // [AKHIR PERUBAHAN]
     // ============================================
 
     await client.query("COMMIT");
@@ -596,17 +605,21 @@ app.post("/api/submit-reading/:babId", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-// === [BARU] API Routes 7. Listening (Choukai) ===
+// POST /api/listening - Buat choukai baru
 app.post("/api/listening", authApiMiddleware, async (req, res) => {
-  const { bab_id, title, audio_url, script } = req.body;
+  // [DIUBAH] Tambahkan 'description'
+  const { bab_id, title, description, image_url, audio_url_1, audio_url_2, script } = req.body;
   try {
     const { rows } = await pool.query(
-      "INSERT INTO listening_exercises (bab_id, title, audio_url, script) VALUES ($1, $2, $3, $4) RETURNING *",
-      [bab_id, title, audio_url, script] 
+      `INSERT INTO listening_exercises 
+       (bab_id, title, description, image_url, audio_url_1, audio_url_2, script) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      // [DIUBAH] Sesuaikan parameter
+      [bab_id, title, description, image_url, audio_url_1, audio_url_2, script] 
     );
     res.status(201).json(rows[0]);
   } catch (err) {
-    console.error("Error di POST /api/listening:", err); // [DEBUG]
+    console.error("Error di POST /api/listening:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -615,6 +628,7 @@ app.post("/api/listening", authApiMiddleware, async (req, res) => {
 app.get("/api/listening/:babId", async (req, res) => {
   const { babId } = req.params;
   try {
+    // Ambil data (termasuk kolom baru)
     const { rows } = await pool.query("SELECT * FROM listening_exercises WHERE bab_id = $1 ORDER BY id ASC", [babId]);
     res.json(rows);
   } catch (err) {
@@ -626,6 +640,7 @@ app.get("/api/listening/:babId", async (req, res) => {
 app.get("/api/admin/listening/:babId", authApiMiddleware, async (req, res) => {
   const { babId } = req.params;
   try {
+    // Ambil data (termasuk kolom baru)
     const { rows } = await pool.query("SELECT * FROM listening_exercises WHERE bab_id = $1 ORDER BY id ASC", [babId]);
     res.json(rows);
   } catch (err) {
@@ -637,6 +652,7 @@ app.get("/api/admin/listening/:babId", authApiMiddleware, async (req, res) => {
 app.get("/api/listening/entry/:id", authApiMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
+    // Ambil data (termasuk kolom baru)
     const { rows } = await pool.query("SELECT * FROM listening_exercises WHERE id = $1", [id]);
     res.json(rows[0]);
   } catch (err) {
@@ -647,15 +663,19 @@ app.get("/api/listening/entry/:id", authApiMiddleware, async (req, res) => {
 // PUT /api/listening/:id - Update satu choukai (auth)
 app.put("/api/listening/:id", authApiMiddleware, async (req, res) => {
   const { id } = req.params;
-  const { title, audio_url, script } = req.body;
+  // [DIUBAH] Tambahkan 'description'
+  const { title, description, image_url, audio_url_1, audio_url_2, script } = req.body;
   try {
     const { rows } = await pool.query(
-      "UPDATE listening_exercises SET title = $1, audio_url = $2, script = $3 WHERE id = $4 RETURNING *",
-      [title, audio_url, script, id] 
+      `UPDATE listening_exercises 
+       SET title = $1, description = $2, image_url = $3, audio_url_1 = $4, audio_url_2 = $5, script = $6 
+       WHERE id = $7 RETURNING *`,
+      // [DIUBAH] Sesuaikan parameter
+      [title, description, image_url, audio_url_1, audio_url_2, script, id] 
     );
     res.json(rows[0]);
   } catch (err) {
-    console.error("Error di PUT /api/listening:", err); // [DEBUG]
+    console.error("Error di PUT /api/listening:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -670,7 +690,6 @@ app.delete("/api/listening/:id", authApiMiddleware, async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

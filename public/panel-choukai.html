@@ -54,17 +54,34 @@
           <label for="title" class="block text-sm font-medium text-stone-700 mb-2">Judul Latihan</label>
           <input type="text" id="title" name="title" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="Mis: Percakapan di Stasiun" required>
         </div>
+        <div>
+          <label class="block text-sm font-medium text-stone-700 mb-2">
+            Deskripsi / Petunjuk Pengerjaan (Opsional)
+          </label>
+          <div id="description-editor-container"></div>
+        </div>
+        <div>
+          <label for="image_url" class="block text-sm font-medium text-stone-700 mb-2">URL Gambar (Opsional)</label>
+          <input type="url" id="image_url" name="image_url" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="https://raw.githubusercontent.com/.../file.jpg">
+        </div>
 
         <div>
-          <label for="audio_url" class="block text-sm font-medium text-stone-700 mb-2">URL Audio</label>
-          <input type="url" id="audio_url" name="audio_url" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="https://raw.githubusercontent.com/.../file.mp3" required>
+          <label for="audio_url_1" class="block text-sm font-medium text-stone-700 mb-2">URL Audio 1 (Wajib)</label>
+          <input type="url" id="audio_url_1" name="audio_url_1" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="https://raw.githubusercontent.com/.../file1.mp3" required>
         </div>
+        
+        <div>
+          <label for="audio_url_2" class="block text-sm font-medium text-stone-700 mb-2">URL Audio 2 (Opsional)</label>
+          <input type="url" id="audio_url_2" name="audio_url_2" class="w-full px-4 py-2.5 text-sm text-stone-900 bg-white border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900 focus:border-transparent transition-all duration-200 placeholder:text-stone-400" placeholder="https://raw.githubusercontent.com/.../file2.mp3">
+        </div>
+
         <div>
           <label class="block text-sm font-medium text-stone-700 mb-2">
             Teks Jawaban / Script (Opsional)
           </label>
           <div id="script-editor-container"></div>
         </div>
+
         <div class="flex items-center gap-3">
           <button type="submit" id="submit-button" class="inline-flex items-center justify-center px-5 py-2.5 text-sm font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2">
             Tambah Latihan
@@ -75,7 +92,7 @@
           </button>
         </div>
       </form>
-    </div>
+      </div>
 
     <div class="bg-white rounded-xl border border-stone-200 shadow-sm p-6 sm:p-8">
       <h2 class="text-xl font-semibold text-stone-900 mb-6 tracking-tight">Daftar Latihan Choukai</h2>
@@ -103,7 +120,7 @@
     const listContainer = document.getElementById('list-container');
 
     // Inisialisasi Quill Editor
-    const quill = new Quill('#script-editor-container', {
+    const descriptionQuill = new Quill('#description-editor-container', {
       theme: 'snow',
       modules: {
         toolbar: [
@@ -113,9 +130,15 @@
           ['clean']
         ]
       },
-      placeholder: 'Masukkan script atau jawaban choukai di sini...'
+      placeholder: 'Masukkan petunjuk pengerjaan choukai di sini...'
     });
 
+    // Inisialisasi Quill Editor (Script/Jawaban)
+    const scriptQuill = new Quill('#script-editor-container', {
+      theme: 'snow',
+      modules: { /* ... (toolbar modules) ... */ },
+      placeholder: 'Masukkan script atau jawaban choukai di sini...'
+    });
     const showToast = (message, icon = 'success') => {
       Swal.fire({
         toast: true,
@@ -145,7 +168,7 @@
       }
     }
 
-    // 2. Render Daftar Latihan Choukai
+    // 2. Render Daftar Latihan Choukai [DIUBAH]
     function renderListeningExercises(exercises) {
       listContainer.innerHTML = '';
       if (exercises.length === 0) {
@@ -161,7 +184,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div class="flex-1 min-w-0">
               <p class="text-base font-medium text-stone-900 truncate">${ex.title || 'Tanpa judul'}</p>
-              <p class="text-sm text-stone-600 truncate">${ex.audio_url || 'Tanpa URL'}</p>
+              <p class="text-sm text-stone-600 truncate">${ex.audio_url_1 || 'Tanpa URL Audio 1'}</p>
             </div>
             <div class="flex-shrink-0 flex gap-2">
               <button class="edit-btn inline-flex items-center justify-center px-3 py-2 text-xs font-medium text-white bg-stone-900 hover:bg-stone-800 rounded-md" data-id="${ex.id}">
@@ -177,27 +200,31 @@
       });
     }
 
-    // 3. Reset Form
+    // 3. Reset Form [DIUBAH]
     function resetForm() {
-      form.reset();
+     form.reset();
       editingIdInput.value = '';
-      quill.setContents([]); 
+      descriptionQuill.setContents([]); // [BARU] Hapus isi deskripsi
+      scriptQuill.setContents([]); // [DIUBAH] (sebelumnya 'quill')
       
       formTitle.textContent = 'Tambah Latihan Mendengar Baru';
       submitButton.textContent = 'Tambah Latihan';
       cancelEditButton.classList.add('hidden');
     }
 
-    // 4. Masuk ke Mode "Edit"
+    // 4. Masuk ke Mode "Edit" [DIUBAH]
     async function editExercise(id) {
       try {
         const res = await fetch(`/api/listening/entry/${id}`);
         if (!res.ok) throw new Error('Gagal mengambil data');
         const ex = await res.json();
         
-        form.title.value = ex.title;
-        form.audio_url.value = ex.audio_url;
-        quill.root.innerHTML = ex.script || ''; 
+        form.title.value = ex.title || '';
+        descriptionQuill.root.innerHTML = ex.description || ''; // [BARU] Isi deskripsi
+        form.image_url.value = ex.image_url || '';
+        form.audio_url_1.value = ex.audio_url_1 || '';
+        form.audio_url_2.value = ex.audio_url_2 || '';
+        scriptQuill.root.innerHTML = ex.script || ''; // [DIUBAH] (sebelumnya 'quill')
         editingIdInput.value = ex.id;
         
         formTitle.textContent = 'Edit Latihan Mendengar';
@@ -211,7 +238,8 @@
         showToast(err.message, 'error');
       }
     }
-    // 5. Hapus Latihan
+    
+    // 5. Hapus Latihan (Tidak Berubah)
     function deleteExercise(id) {
       Swal.fire({
         title: 'Anda yakin?',
@@ -237,15 +265,20 @@
       });
     }
 
-    // 6. Event Listener untuk Submit (Create/Update)
+    // 6. Event Listener untuk Submit (Create/Update) [DIUBAH]
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       
+      // Ambil semua nilai dari form
+     // Ambil semua nilai dari form
       const title = form.title.value;
-      const audio_url = form.audio_url.value;
-      const script = quill.root.innerHTML; 
+      const description = descriptionQuill.root.innerHTML; // [BARU] Ambil deskripsi
+      const image_url = form.image_url.value || null;
+      const audio_url_1 = form.audio_url_1.value;
+      const audio_url_2 = form.audio_url_2.value || null;
+      const script = scriptQuill.root.innerHTML; // [DIUBAH] (sebelumnya 'quill')
       
-      // [FIX] Cek jika script kosong, kirim null
+      const descriptionToSend = (description === '<p><br></p>') ? null : description; // [BARU]
       const scriptToSend = (script === '<p><br></p>') ? null : script;
 
       const editingId = editingIdInput.value;
@@ -253,17 +286,26 @@
       
       const method = isEditing ? 'PUT' : 'POST';
       const url = isEditing ? `/api/listening/${editingId}` : '/api/listening';
+      
       try {
         const res = await fetch(url, {
           method: method,
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ bab_id: babId, title, audio_url, script: scriptToSend }) // Kirim scriptToSend
+          // [DIUBAH] Kirim body dengan data baru
+          body: JSON.stringify({ 
+            bab_id: babId, 
+            title, 
+            description: descriptionToSend, // [BARU]
+            image_url, 
+            audio_url_1, 
+            audio_url_2, 
+            script: scriptToSend 
+          })
         });
         
         if (!res.ok) {
-            // [DEBUG] Coba baca error dari server
-            const errData = await res.json();
-            throw new Error(errData.error || (isEditing ? 'Gagal memperbarui' : 'Gagal menambah'));
+          const errData = await res.json();
+          throw new Error(errData.error || (isEditing ? 'Gagal memperbarui' : 'Gagal menambah'));
         }
         
         resetForm(); 
@@ -275,7 +317,7 @@
       }
     });
 
-    // 7. Event Listener untuk tombol di List (Edit/Delete)
+    // 7. Event Listener untuk tombol di List (Edit/Delete) (Tidak Berubah)
     listContainer.addEventListener('click', (e) => {
       const target = e.target.closest('button');
       if (!target) return;
@@ -289,7 +331,7 @@
       }
     });
     
-    // 8. Event Listener untuk Tombol Batal Edit
+    // 8. Event Listener untuk Tombol Batal Edit (Tidak Berubah)
     cancelEditButton.addEventListener('click', resetForm);
 
     // Muat data saat halaman dibuka
