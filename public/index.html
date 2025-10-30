@@ -1,11 +1,12 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" class="">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>勉強会 JLPT</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A=="
         crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -13,145 +14,223 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1&display=swap" rel="stylesheet">
     <style>
-        p {
+        body {
             font-family: "Shippori Mincho B1", serif !important;
             font-weight: 400;
             font-style: normal;
         }
-
-        h1 {
-            font-family: "Shippori Mincho B1", serif !important;
-        }
-
-        h2 {
-            font-family: "Shippori Mincho B1", serif !important;
-        }
-
-        span {
-            font-family: "Shippori Mincho B1", serif !important;
-        }
-
-        div {
-            font-family: "Shippori Mincho B1", serif !important;
-        }
-
-        h3 {
-            font-family: "Shippori Mincho B1", serif !important;
-        }
     </style>
+    
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
 </head>
 
-<body class="bg-stone-100 min-h-screen antialiased">
+<body class="bg-stone-100 dark:bg-stone-900 text-stone-900 dark:text-stone-100 min-h-screen antialiased transition-colors duration-200">
 
-    <header class="bg-white border-b border-stone-200">
-        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-            <h1 class="text-2xl sm:text-3xl font-semibold text-stone-900 tracking-tight mb-2">能力試験・勉強会</h1>
+    <header class="bg-white/80 dark:bg-stone-800/80 border-b border-stone-200 dark:border-stone-700 sticky top-0 z-10 backdrop-blur-sm">
+        <nav class="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl sm:text-3xl font-semibold text-stone-900 dark:text-stone-100 tracking-tight">能力試験・勉強会</h1>
+
+                <button id="theme-toggle-btn"
+                    class="relative w-12 h-12 p-2">
+                    <span class="sr-only">Toggle theme</span>
+                    <i id="sun-icon" class="fa-solid fa-sun text-xl absolute inset-0 m-auto"></i>
+                    <i id="moon-icon" class="fa-solid fa-moon text-xl absolute inset-0 m-auto"></i>
+                </button>
+            </div>
         </nav>
     </header>
 
     <main class="container mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 max-w-6xl">
-        <h2 class="text-lg font-medium text-stone-900 mb-8">内容</h2>
+        <h2 class="text-lg font-medium text-stone-900 dark:text-stone-100 mb-8">内容</h2>
 
         <div id="chapters-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
 
-            <div id="loading-placeholder" class="text-center p-8 text-sm text-stone-500 col-span-full">
+            <div id="loading-placeholder" class="text-center p-8 text-sm text-stone-500 dark:text-stone-400 col-span-full">
                 Memuat materi...
             </div>
 
         </div>
     </main>
 
-    <footer class="border-t border-stone-200 mt-16">
+    <footer class="border-t border-stone-200 dark:border-stone-700 mt-16">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <p class="text-xs text-stone-500 text-center">&copy; 2025 JLPT </p>
+            <p class="text-xs text-stone-500 dark:text-stone-400 text-center">&copy; 2025 JLPT </p>
         </div>
     </footer>
-
-   <script>
+  <script>
+        (function() {
+            try {
+                const theme = localStorage.getItem('theme');
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                
+                if (theme === 'dark' || (!theme && prefersDark)) {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+            } catch (err) {
+                console.warn('Could not apply theme from localStorage.', err);
+            }
+        })();
+    </script>
+    <script>
     document.addEventListener('DOMContentLoaded', async () => {
-      const container = document.getElementById('chapters-container');
-      const loadingPlaceholder = document.getElementById('loading-placeholder');
+        const container = document.getElementById('chapters-container');
+        const loadingPlaceholder = document.getElementById('loading-placeholder');
 
-      // === [BARU] Logika Caching ===
-      // Cache ini khusus untuk data publik (daftar bab)
-      const CACHE_KEY = 'publicChaptersCache'; 
+        const CACHE_KEY = 'publicChaptersCache'; 
 
-      function getCachedChapters() {
-        const cachedData = sessionStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          return JSON.parse(cachedData);
-        }
-        return null;
-      }
-
-      function setCachedChapters(chapters) {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(chapters));
-      }
-      // === Akhir Logika Caching ===
-
-      // Fungsi untuk me-render UI (dipisahkan agar bisa dipakai ulang)
-      function renderChapters(chapters) {
-        // Sembunyikan placeholder loading
-        loadingPlaceholder.classList.add('hidden');
-
-        if (chapters.length === 0) {
-          container.innerHTML = '<p class="text-sm text-stone-600 col-span-full text-center py-8">Belum ada materi yang tersedia saat ini.</p>';
-          return;
+        function getCachedChapters() {
+            const cachedData = sessionStorage.getItem(CACHE_KEY);
+            if (cachedData) {
+                return JSON.parse(cachedData);
+            }
+            return null;
         }
 
-        // Kosongkan kontainer sebelum mengisi
-        container.innerHTML = ''; 
-        
-        // 2. Render setiap bab sebagai card
-        chapters.forEach(bab => {
-          const card = `
-            <div class="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:border-stone-600 hover:shadow-md group">
-              <div class="p-6">
-                <h3 class="text-lg font-semibold text-stone-900 mb-2 tracking-tight group-hover:text-stone-700 transition-colors duration-200">${bab.title}</h3>
-                <p class="text-sm text-stone-600 mb-6 leading-relaxed min-h-[40px]">${bab.description || 'Klik untuk mulai belajar.'}</p>
-                <a href="/study?babId=${bab.id}" class="inline-flex items-center text-sm font-medium text-stone-900 hover:text-stone-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 rounded">
-                  Mulai Belajar
-                  <svg class="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                  </svg>
-                </a>
-              </div>
-            </div>
-          `;
-          container.innerHTML += card;
-        });
-      }
-
-      try {
-        // 1. Coba ambil dari cache
-        const cachedChapters = getCachedChapters();
-        if (cachedChapters) {
-          console.log('Daftar bab dimuat dari cache...');
-          renderChapters(cachedChapters);
-          return; // Selesai, tidak perlu fetch
+        function setCachedChapters(chapters) {
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify(chapters));
         }
 
-        // 2. Jika cache kosong, fetch ke server
-        console.log('Daftar bab di-fetch dari server...');
-        const res = await fetch('/api/chapters');
-        if (!res.ok) {
-          throw new Error('Gagal mengambil data dari server.');
+        function renderChapters(chapters) {
+            loadingPlaceholder.classList.add('hidden');
+
+            if (chapters.length === 0) {
+                // [MODIFIKASI] class dark-mode ditambahkan
+                container.innerHTML = '<p class="text-sm text-stone-600 dark:text-stone-400 col-span-full text-center py-8">Belum ada materi yang tersedia saat ini.</p>';
+                return;
+            }
+
+            container.innerHTML = ''; 
+            
+            chapters.forEach(bab => {
+                // [MODIFIKASI] class dark-mode ditambahkan
+                const card = `
+                <div class="bg-white border border-stone-200 rounded-lg overflow-hidden transition-all duration-200 hover:border-stone-600 hover:shadow-md group dark:bg-stone-800 dark:border-stone-700 dark:hover:border-stone-300">
+                    <div class="p-6">
+                        <h3 class="text-lg font-semibold text-stone-900 mb-2 tracking-tight group-hover:text-stone-700 transition-colors duration-200 dark:text-stone-100 dark:group-hover:text-stone-200">${bab.title}</h3>
+                        <p class="text-sm text-stone-600 mb-6 leading-relaxed min-h-[40px] dark:text-stone-400">${bab.description || 'Klik untuk mulai belajar.'}</p>
+                        <a href="/study?babId=${bab.id}" class="inline-flex items-center text-sm font-medium text-stone-900 hover:text-stone-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 rounded dark:text-stone-100 dark:hover:text-stone-300 dark:focus:ring-stone-100 dark:focus:ring-offset-stone-800">
+                            Mulai Belajar
+                            <svg class="ml-2 w-4 h-4 transform group-hover:translate-x-1 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                `;
+                container.innerHTML += card;
+            });
         }
 
-        const chapters = await res.json();
+        try {
+            const cachedChapters = getCachedChapters();
+            if (cachedChapters) {
+                console.log('Daftar bab dimuat dari cache...');
+                renderChapters(cachedChapters);
+                return;
+            }
 
-        // 3. Simpan ke cache untuk sesi ini
-        setCachedChapters(chapters);
+            console.log('Daftar bab di-fetch dari server...');
+            const res = await fetch('/api/chapters');
+            if (!res.ok) {
+                throw new Error('Gagal mengambil data dari server.');
+            }
 
-        // 4. Render data baru
-        renderChapters(chapters);
+            const chapters = await res.json();
+            setCachedChapters(chapters);
+            renderChapters(chapters);
 
-      } catch (err) {
-        console.error('Error fetching chapters:', err);
-        loadingPlaceholder.innerHTML = '<p class="text-sm text-red-600 col-span-full text-center py-8">Gagal memuat materi. Silakan coba lagi nanti.</p>';
-      }
+        } catch (err) {
+            console.error('Error fetching chapters:', err);
+            loadingPlaceholder.innerHTML = '<p class="text-sm text-red-600 col-span-full text-center py-8">Gagal memuat materi. Silakan coba lagi nanti.</p>';
+        }
     });
-  </script>
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+
+    <script>
+        // Logika ini dipisah dari skrip data Anda agar rapi
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleBtn = document.getElementById('theme-toggle-btn');
+            const sunIcon = document.getElementById('sun-icon');
+            const moonIcon = document.getElementById('moon-icon');
+            const htmlEl = document.documentElement;
+
+            // Fungsi untuk animasi ikon menggunakan GSAP
+            function animateIcons(isDark) {
+                if (isDark) {
+                    // Transisi ke Dark (Moon muncul, Sun hilang)
+                    gsap.to(sunIcon, { rotation: 90, scale: 0, opacity: 0, duration: 0.3, ease: "power1.in" });
+                    gsap.fromTo(moonIcon,
+                        { rotation: -90, scale: 0, opacity: 0 },
+                        { rotation: 0, scale: 1, opacity: 1, duration: 0.3, ease: "power1.out", delay: 0.1 }
+                    );
+                } else {
+                    // Transisi ke Light (Sun muncul, Moon hilang)
+                    gsap.to(moonIcon, { rotation: 90, scale: 0, opacity: 0, duration: 0.3, ease: "power1.in" });
+                    gsap.fromTo(sunIcon,
+                        { rotation: -90, scale: 0, opacity: 0 },
+                        { rotation: 0, scale: 1, opacity: 1, duration: 0.3, ease: "power1.out", delay: 0.1 }
+                    );
+                }
+            }
+
+            // Fungsi untuk mengatur state ikon saat halaman dimuat.
+            // Ini membaca class yang SUDAH DITERAPKAN oleh skrip di <head>.
+            function setInitialIconState() {
+                if (htmlEl.classList.contains('dark')) {
+                    // Jika dark, sembunyikan matahari, tampilkan bulan
+                    gsap.set(sunIcon, { scale: 0, opacity: 0, rotation: 90 });
+                    gsap.set(moonIcon, { scale: 1, opacity: 1, rotation: 0 });
+                } else {
+                    // Jika light, tampilkan matahari, sembunyikan bulan
+                    gsap.set(sunIcon, { scale: 1, opacity: 1, rotation: 0 });
+                    gsap.set(moonIcon, { scale: 0, opacity: 0, rotation: -90 });
+                }
+            }
+
+            // 1. Atur ikon (sun/moon) mana yang terlihat saat halaman dimuat
+            setInitialIconState();
+
+            // 2. Tambahkan event listener untuk tombol
+            themeToggleBtn.addEventListener('click', () => {
+                const isCurrentlyDark = htmlEl.classList.contains('dark');
+
+                if (isCurrentlyDark) {
+                    htmlEl.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                    animateIcons(false); // Animasikan ikon ke light
+                } else {
+                    htmlEl.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                    animateIcons(true); // Animasikan ikon ke dark
+                }
+            });
+
+            // 3. (Opsional) Dengar perubahan sistem jika user belum memilih
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                // Hanya ubah jika user belum punya preferensi manual di localStorage
+                if (!localStorage.getItem('theme')) {
+                    if (e.matches) {
+                        htmlEl.classList.add('dark');
+                        animateIcons(true);
+                    } else {
+                        htmlEl.classList.remove('dark');
+                        animateIcons(false);
+                    }
+                }
+            });
+        });
+    </script>
+
 </body>
 
 </html>

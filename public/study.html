@@ -138,9 +138,9 @@
 
         .dark {
             /* Dark Mode */
-            --bg-color: #1c1c1c;
+            --bg-color: #1c1917;
             --text-color-p: #e5e5e5;
-            --bg-header: rgba(28, 28, 28, 0.9);
+            --bg-header: #272322;
             --border-color: #44403c;
             --text-primary: #f5f5f4;
             --text-secondary: #a8a29e;
@@ -563,7 +563,7 @@
                 vocabContainer.innerHTML = '';
                 allVocab = [];
                 if (data.length === 0) {
-                    vocabContainer.innerHTML = '<p class="text-sm">Belum ada kosakata untuk bab ini.</p>';
+                    vocabContainer.innerHTML = '<p class="text-sm">Coming soon.</p>';
                 } else {
                     data.forEach(v => {
                         vocabContainer.innerHTML += `
@@ -651,7 +651,7 @@
                 // 'exercises' di sini adalah array of PASSAGES
                 readingContainer.innerHTML = '';
                 if (!exercises || exercises.length === 0) {
-                    readingContainer.innerHTML = '<p class="text-sm">Belum ada latihan membaca untuk bab ini.</p>';
+                    readingContainer.innerHTML = '<p class="text-sm">Coming soon</p>';
                     return;
                 }
 
@@ -815,7 +815,8 @@
        function renderListening(exercises) {
               listeningContainer.innerHTML = '';
               if (exercises.length === 0) {
-                  // ... (pesan 'belum ada latihan')
+                listeningContainer.innerHTML = '<p class="text-sm">Coming soon.</p>';
+
                   return;
               }
 
