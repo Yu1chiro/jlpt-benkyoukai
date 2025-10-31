@@ -193,7 +193,6 @@ app.delete("/api/chapters/:id", authApiMiddleware, async (req, res) => {
   }
 });
 
-// 3. Vocabularies API (Tidak Berubah)
 app.get("/api/vocabulary/:id", authApiMiddleware, async (req, res) => {
   const { id } = req.params;
   try {
