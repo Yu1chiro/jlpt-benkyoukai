@@ -18,10 +18,6 @@ const pool = new Pool({
   try {
     await client.query("BEGIN");
 
-    // Hapus tabel lama jika ada
-    // await client.query("DROP TABLE IF EXISTS reading_exercises CASCADE");
-
-    // Buat tabel baru untuk Wacana (Passages)
     await client.query(`
       CREATE TABLE IF NOT EXISTS reading_passages (
         id SERIAL PRIMARY KEY,
@@ -30,7 +26,6 @@ const pool = new Pool({
       )
     `);
 
-    // Buat tabel baru untuk Pertanyaan Wacana (Questions)
     await client.query(`
       CREATE TABLE IF NOT EXISTS reading_questions (
         id SERIAL PRIMARY KEY,
@@ -45,34 +40,33 @@ const pool = new Pool({
     `);
 
     // [DIUBAH] Tabel listening (dengan kolom baru)
-   await client.query(`
-      CREATE TABLE IF NOT EXISTS listening_exercises (
-        id SERIAL PRIMARY KEY,
-        bab_id INTEGER REFERENCES chapters(id) ON DELETE CASCADE,
-        title TEXT,
-        description TEXT,   -- BARU
-        image_url TEXT,
-        audio_url_1 TEXT,
-        audio_url_2 TEXT,
-        script TEXT 
-      )
-    `);
+    await client.query(`
+CREATE TABLE IF NOT EXISTS listening_exercises (
+id SERIAL PRIMARY KEY,
+bab_id INTEGER REFERENCES chapters(id) ON DELETE CASCADE,
+title TEXT,
+description TEXT,
+image_url TEXT,
+audio_urls TEXT[] DEFAULT ARRAY[]::TEXT[],
+script TEXT 
+)
+`);
 
-    // [DIUBAH] Blok ALTER untuk memastikan semua kolom ada
+    // GANTI blok [DIUBAH] Blok ALTER:
     try {
       await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS description TEXT;`);
       await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS image_url TEXT;`);
-      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS audio_url_1 TEXT;`);
-      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS audio_url_2 TEXT;`);
       await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS script TEXT;`);
-      
-      // (Opsional) Hapus kolom 'audio_url' lama jika Anda yakin sudah tidak terpakai
-      await client.query(`ALTER TABLE listening_exercises DROP COLUMN IF EXISTS audio_url;`); 
 
-      console.log("Kolom 'listening_exercises' (image_url, audio_url_1, audio_url_2, script) berhasil divalidasi/ditambahkan.");
+      // [DIUBAH] Tambahkan kolom array baru
+      await client.query(`ALTER TABLE listening_exercises ADD COLUMN IF NOT EXISTS audio_urls TEXT[] DEFAULT ARRAY[]::TEXT[];`); // Hapus kolom 'audio_url' lama yang tidak terpakai
+      await client.query(`ALTER TABLE listening_exercises DROP COLUMN IF EXISTS audio_url;`);
+      await client.query(`ALTER TABLE listening_exercises DROP COLUMN IF EXISTS audio_url_1;`);
+      await client.query(`ALTER TABLE listening_exercises DROP COLUMN IF EXISTS audio_url_2;`);
+
+      console.log("Kolom 'listening_exercises' (termasuk audio_urls) berhasil divalidasi.");
     } catch (alterErr) {
       console.error("Gagal memvalidasi kolom 'listening_exercises':", alterErr.message);
-      // Jangan hentikan proses jika error
     }
     // [AKHIR PERUBAHAN]
     // ============================================
@@ -417,7 +411,7 @@ FROM reading_passages p
 WHERE p.bab_id = $1 
 ORDER BY p.id ASC`,
       [babId]
-    ); 
+    );
     const filteredRows = rows.map((row) => {
       if (row.questions && row.questions.length === 1 && row.questions[0].id === null) {
         row.questions = [];
@@ -462,7 +456,7 @@ app.get("/api/admin/reading/:babId", authApiMiddleware, async (req, res) => {
     });
     res.json(filteredRows);
   } catch (err) {
-    console.error('Error di /api/admin/reading/:babId:', err);
+    console.error("Error di /api/admin/reading/:babId:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -471,9 +465,9 @@ app.post("/api/reading/passage", authApiMiddleware, async (req, res) => {
   const { bab_id, passage_content, questions } = req.body;
   const client = await pool.connect();
   try {
-    await client.query("BEGIN"); 
+    await client.query("BEGIN");
     const passageRes = await client.query("INSERT INTO reading_passages (bab_id, passage_content) VALUES ($1, $2) RETURNING id", [bab_id, passage_content]);
-    const passageId = passageRes.rows[0].id; 
+    const passageId = passageRes.rows[0].id;
 
     if (questions && questions.length > 0) {
       for (const q of questions) {
@@ -524,14 +518,14 @@ GROUP BY p.id`,
 
 // PUT /api/reading/passage/:id (Update wacana + pertanyaannya)
 app.put("/api/reading/passage/:id", authApiMiddleware, async (req, res) => {
-  const { id } = req.params; 
+  const { id } = req.params;
   const { passage_content, questions } = req.body;
   const client = await pool.connect();
   try {
-    await client.query("BEGIN"); 
-    await client.query("UPDATE reading_passages SET passage_content = $1 WHERE id = $2", [passage_content, id]); 
+    await client.query("BEGIN");
+    await client.query("UPDATE reading_passages SET passage_content = $1 WHERE id = $2", [passage_content, id]);
 
-    await client.query("DELETE FROM reading_questions WHERE passage_id = $1", [id]); 
+    await client.query("DELETE FROM reading_questions WHERE passage_id = $1", [id]);
 
     if (questions && questions.length > 0) {
       for (const q of questions) {
@@ -566,7 +560,7 @@ app.delete("/api/reading/passage/:id", authApiMiddleware, async (req, res) => {
 // === [API BARU] Untuk submit latihan dokkai ===
 app.post("/api/submit-reading/:babId", async (req, res) => {
   const { babId } = req.params;
-  const userAnswers = req.body.answers; 
+  const userAnswers = req.body.answers;
 
   try {
     const { rows: correctAnswers } = await pool.query(
@@ -606,20 +600,38 @@ app.post("/api/submit-reading/:babId", async (req, res) => {
   }
 });
 // POST /api/listening - Buat choukai baru
+// GANTI: POST /api/listening
 app.post("/api/listening", authApiMiddleware, async (req, res) => {
-  // [DIUBAH] Tambahkan 'description'
-  const { bab_id, title, description, image_url, audio_url_1, audio_url_2, script } = req.body;
+  // [DIUBAH] Ambil 'audio_urls' sebagai array
+  const { bab_id, title, description, image_url, audio_urls, script } = req.body;
   try {
     const { rows } = await pool.query(
       `INSERT INTO listening_exercises 
-       (bab_id, title, description, image_url, audio_url_1, audio_url_2, script) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-      // [DIUBAH] Sesuaikan parameter
-      [bab_id, title, description, image_url, audio_url_1, audio_url_2, script] 
+(bab_id, title, description, image_url, audio_urls, script) 
+VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`, // [DIUBAH] Sesuaikan parameter
+      [bab_id, title, description, image_url, audio_urls, script]
     );
     res.status(201).json(rows[0]);
   } catch (err) {
     console.error("Error di POST /api/listening:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GANTI: PUT /api/listening/:id
+app.put("/api/listening/:id", authApiMiddleware, async (req, res) => {
+  const { id } = req.params; // [DIUBAH] Ambil 'audio_urls' sebagai array
+  const { title, description, image_url, audio_urls, script } = req.body;
+  try {
+    const { rows } = await pool.query(
+      `UPDATE listening_exercises 
+SET title = $1, description = $2, image_url = $3, audio_urls = $4, script = $5 
+WHERE id = $6 RETURNING *`, // [DIUBAH] Sesuaikan parameter
+      [title, description, image_url, audio_urls, script, id]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error di PUT /api/listening:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -661,24 +673,6 @@ app.get("/api/listening/entry/:id", authApiMiddleware, async (req, res) => {
 });
 
 // PUT /api/listening/:id - Update satu choukai (auth)
-app.put("/api/listening/:id", authApiMiddleware, async (req, res) => {
-  const { id } = req.params;
-  // [DIUBAH] Tambahkan 'description'
-  const { title, description, image_url, audio_url_1, audio_url_2, script } = req.body;
-  try {
-    const { rows } = await pool.query(
-      `UPDATE listening_exercises 
-       SET title = $1, description = $2, image_url = $3, audio_url_1 = $4, audio_url_2 = $5, script = $6 
-       WHERE id = $7 RETURNING *`,
-      // [DIUBAH] Sesuaikan parameter
-      [title, description, image_url, audio_url_1, audio_url_2, script, id] 
-    );
-    res.json(rows[0]);
-  } catch (err) {
-    console.error("Error di PUT /api/listening:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // DELETE /api/listening/:id - Hapus satu choukai (auth)
 app.delete("/api/listening/:id", authApiMiddleware, async (req, res) => {
