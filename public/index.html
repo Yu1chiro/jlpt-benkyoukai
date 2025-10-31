@@ -79,24 +79,10 @@
             }
         })();
     </script>
-    <script>
+   <script>
     document.addEventListener('DOMContentLoaded', async () => {
         const container = document.getElementById('chapters-container');
         const loadingPlaceholder = document.getElementById('loading-placeholder');
-
-        const CACHE_KEY = 'publicChaptersCache'; 
-
-        function getCachedChapters() {
-            const cachedData = sessionStorage.getItem(CACHE_KEY);
-            if (cachedData) {
-                return JSON.parse(cachedData);
-            }
-            return null;
-        }
-
-        function setCachedChapters(chapters) {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify(chapters));
-        }
 
         function renderChapters(chapters) {
             loadingPlaceholder.classList.add('hidden');
@@ -107,8 +93,8 @@
                 return;
             }
 
-            container.innerHTML = ''; 
-            
+            container.innerHTML = '';
+
             chapters.forEach(bab => {
                 // [MODIFIKASI] class dark-mode ditambahkan
                 const card = `
@@ -130,13 +116,6 @@
         }
 
         try {
-            const cachedChapters = getCachedChapters();
-            if (cachedChapters) {
-                console.log('Daftar bab dimuat dari cache...');
-                renderChapters(cachedChapters);
-                return;
-            }
-
             console.log('Daftar bab di-fetch dari server...');
             const res = await fetch('/api/chapters');
             if (!res.ok) {
@@ -144,7 +123,6 @@
             }
 
             const chapters = await res.json();
-            setCachedChapters(chapters);
             renderChapters(chapters);
 
         } catch (err) {
@@ -152,7 +130,7 @@
             loadingPlaceholder.innerHTML = '<p class="text-sm text-red-600 col-span-full text-center py-8">Gagal memuat materi. Silakan coba lagi nanti.</p>';
         }
     });
-    </script>
+</script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
